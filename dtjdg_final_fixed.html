@@ -1,0 +1,1729 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PokéJourney</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;image-rendering:pixelated;}
+body{background:#0d0d1a;display:flex;justify-content:center;align-items:center;min-height:100vh;font-family:'Press Start 2P',monospace;overflow:hidden;}
+#gba-shell{
+  width:520px;background:linear-gradient(160deg,#2c2c5e 0%,#1a1a40 60%,#12123a 100%);
+  border-radius:12px 12px 50px 50px;padding:20px 20px 32px;
+  box-shadow:0 0 80px rgba(80,60,200,0.5),0 0 20px rgba(0,0,0,0.8),inset 0 2px 6px rgba(255,255,255,0.12);
+  position:relative;border:2px solid #3a3a7a;
+}
+#gba-shell::before{content:'';position:absolute;top:0;left:60px;right:60px;height:3px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.15),transparent);border-radius:3px;}
+#screen-bezel{background:#111;border-radius:10px;padding:10px;box-shadow:inset 0 0 30px rgba(0,0,0,0.9),0 4px 8px rgba(0,0,0,0.5);border:2px solid #222;}
+#screen{width:480px;height:320px;background:#1a2a1a;position:relative;overflow:hidden;cursor:default;border-radius:4px;border:2px solid #0a0a0a;font-size:1.4em;}
+#gba-label{position:absolute;top:14px;left:50%;transform:translateX(-50%);font-size:11px;color:rgba(255,255,255,0.3);letter-spacing:4px;white-space:nowrap;}
+#gba-controls{display:flex;justify-content:space-between;align-items:center;margin-top:18px;padding:0 8px;}
+.dpad{width:84px;height:84px;position:relative;}
+.dpad-btn{position:absolute;background:linear-gradient(135deg,#2a2a4a,#1a1a3a);color:#5a5a8a;display:flex;align-items:center;justify-content:center;font-size:12px;cursor:pointer;border-radius:4px;user-select:none;transition:all 0.08s;border:1px solid #3a3a6a;box-shadow:0 3px 0 #0a0a1a;}
+.dpad-btn:active,.dpad-btn.pressed{background:#1a1a3a;transform:translateY(2px);box-shadow:0 1px 0 #0a0a1a;color:#8a8aaa;}
+.dpad-up{top:0;left:50%;transform:translateX(-50%);width:28px;height:28px;}
+.dpad-up:active,.dpad-up.pressed{transform:translateX(-50%) translateY(2px);}
+.dpad-down{bottom:0;left:50%;transform:translateX(-50%);width:28px;height:28px;}
+.dpad-down:active,.dpad-down.pressed{transform:translateX(-50%) translateY(2px);}
+.dpad-left{left:0;top:50%;transform:translateY(-50%);width:28px;height:28px;}
+.dpad-left:active,.dpad-left.pressed{transform:translateY(-50%) translateY(2px);}
+.dpad-right{right:0;top:50%;transform:translateY(-50%);width:28px;height:28px;}
+.dpad-right:active,.dpad-right.pressed{transform:translateY(-50%) translateY(2px);}
+.dpad-center{top:50%;left:50%;transform:translate(-50%,-50%);width:28px;height:28px;background:#1a1a3a;border-radius:4px;}
+.ab-btns{display:flex;gap:14px;align-items:center;}
+.ab-btn{width:42px;height:42px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;font-family:'Press Start 2P',monospace;user-select:none;transition:all 0.08s;border:none;box-shadow:0 5px 0 rgba(0,0,0,0.5),inset 0 2px 4px rgba(255,255,255,0.2);}
+.ab-btn:active,.ab-btn.pressed{transform:translateY(3px);box-shadow:0 2px 0 rgba(0,0,0,0.5);}
+.btn-b{background:linear-gradient(135deg,#c0392b,#8e2219);}
+.btn-a{background:linear-gradient(135deg,#27ae60,#1a7a42);}
+.sys-btns{display:flex;flex-direction:column;gap:6px;align-items:center;}
+.sys-btn{width:44px;height:13px;background:linear-gradient(135deg,#333,#222);border-radius:7px;cursor:pointer;font-size:7px;color:#666;display:flex;align-items:center;justify-content:center;font-family:'Press Start 2P',monospace;border:1px solid #3a3a3a;box-shadow:0 2px 0 #111;}
+.sys-btn:active{transform:translateY(1px);box-shadow:0 1px 0 #111;}
+.screen-fill{width:100%;height:100%;position:absolute;top:0;left:0;}
+/* Title */
+#title-screen{background:linear-gradient(180deg,#0a1a4e 0%,#081240 50%,#050810 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.title-logo{font-size:28px;color:#f8c840;text-shadow:3px 3px 0 #c87820,-1px -1px 0 #e8a830,0 0 30px rgba(248,200,64,0.5);letter-spacing:2px;margin-bottom:6px;animation:titlePulse 2s ease-in-out infinite;}
+@keyframes titlePulse{0%,100%{text-shadow:3px 3px 0 #c87820,-1px -1px 0 #e8a830,0 0 30px rgba(248,200,64,0.5)}50%{text-shadow:3px 3px 0 #c87820,-1px -1px 0 #e8a830,0 0 60px rgba(248,200,64,0.9)}}
+.title-sub{font-size:9px;color:#88a8e8;margin-bottom:20px;letter-spacing:2px;}
+.title-pokemon-row{display:flex;gap:6px;margin-bottom:20px;}
+.title-pokemon-row img{width:60px;height:60px;filter:drop-shadow(0 0 8px rgba(255,255,200,0.4));animation:floatImg 3s ease-in-out infinite;}
+.title-pokemon-row img:nth-child(2){animation-delay:0.3s;}
+.title-pokemon-row img:nth-child(3){animation-delay:0.6s;}
+@keyframes floatImg{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+.press-start{font-size:9px;color:#f8f8f8;animation:blink 1s step-end infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+.title-version{font-size:7px;color:#4a6aa0;position:absolute;bottom:6px;right:8px;}
+.title-stars{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;}
+.star{position:absolute;width:2px;height:2px;background:#fff;border-radius:50%;animation:twinkle 2s ease-in-out infinite;}
+@keyframes twinkle{0%,100%{opacity:0.1;transform:scale(0.8)}50%{opacity:1;transform:scale(1.2)}}
+/* Name */
+#name-screen{background:linear-gradient(180deg,#c8e8b0,#a8d090);display:flex;flex-direction:column;align-items:center;padding:16px 14px;}
+.name-box{background:#fff;border:3px solid #386038;padding:12px 20px;margin:8px 0;width:100%;text-align:center;box-shadow:3px 3px 0 #386038;}
+.name-title{font-size:11px;color:#1a4a1a;margin-bottom:10px;}
+.name-input-display{font-size:16px;color:#000;letter-spacing:4px;min-height:20px;border-bottom:3px solid #386038;padding-bottom:4px;min-width:140px;display:inline-block;}
+.keyboard{display:grid;grid-template-columns:repeat(9,1fr);gap:2px;width:100%;margin-top:6px;}
+.key-btn{background:linear-gradient(180deg,#d8f0b0,#b8d890);border:2px solid #386038;color:#1a3a1a;font-size:9px;padding:5px 2px;cursor:pointer;font-family:'Press Start 2P',monospace;text-align:center;box-shadow:1px 2px 0 #386038;transition:all 0.08s;}
+.key-btn:hover{background:linear-gradient(180deg,#c0e098,#a0c070);}
+.key-btn:active{transform:translateY(1px);box-shadow:0 0 0 #386038;}
+.key-btn.special{background:linear-gradient(180deg,#a0c8e0,#80a8c0);grid-column:span 2;}
+/* Starter */
+#starter-screen{background:linear-gradient(180deg,#d8f0c0,#b8d8a0);display:flex;flex-direction:column;align-items:center;padding:10px 8px;}
+.starter-title{font-size:9px;color:#1a4a1a;text-align:center;line-height:2;margin-bottom:8px;background:rgba(255,255,255,0.5);padding:6px;border:2px solid #386038;width:100%;}
+.starter-row{display:flex;gap:8px;justify-content:center;margin:6px 0;}
+.starter-card{background:#fff;border:3px solid #386038;padding:8px 6px;cursor:pointer;text-align:center;width:138px;transition:all 0.15s;box-shadow:3px 3px 0 #386038;}
+.starter-card:hover{background:#d8f8b0;border-color:#1a5020;transform:translateY(-3px);box-shadow:3px 6px 0 #386038;}
+.starter-card img{width:68px;height:68px;}
+.starter-name{font-size:10px;color:#000;margin-top:4px;}
+.starter-types{display:flex;gap:3px;justify-content:center;margin-top:4px;}
+.type-badge{font-size:7px;padding:2px 5px;border-radius:3px;color:#fff;text-shadow:1px 1px 0 rgba(0,0,0,0.3);}
+.starter-hint{font-size:8px;color:#386038;text-align:center;margin-top:6px;animation:blink 1.5s step-end infinite;}
+/* Overworld HUD */
+#ow-hud{height:28px;background:linear-gradient(180deg,#0a1a0a,#1a2a1a);display:flex;align-items:center;padding:0 8px;gap:10px;border-bottom:2px solid #2a4a2a;flex-shrink:0;}
+.hud-area{font-size:8px;color:#80d880;flex:1;}
+.hud-badges{display:flex;gap:2px;}
+.badge-icon{width:11px;height:11px;background:radial-gradient(circle,#ffd700,#c8a820);border-radius:50%;border:1px solid #a08010;box-shadow:0 0 4px rgba(255,215,0,0.6);}
+.badge-empty{width:11px;height:11px;background:#2a2a2a;border-radius:50%;border:1px solid #444;}
+.hud-team{font-size:8px;color:#80d880;}
+.hud-money{font-size:8px;color:#f0d060;}
+#ow-menu-bar{height:20px;background:linear-gradient(180deg,#1a2a1a,#0a1a0a);display:flex;align-items:center;padding:0 8px;gap:10px;border-top:2px solid #2a4a2a;flex-shrink:0;}
+.ow-menu-btn{font-size:8px;color:#80d880;cursor:pointer;padding:2px 6px;border:1px solid #3a5a3a;transition:all 0.1s;}
+.ow-menu-btn:hover{background:#2a4a2a;color:#a0f0a0;}
+/* Battle */
+#battle-screen{background:#e8e8e8;display:flex;flex-direction:column;}
+#battle-field{height:192px;position:relative;overflow:hidden;background:linear-gradient(180deg,#87ceeb 0%,#b0d8f0 40%,#68b050 55%,#50922a 100%);}
+.battle-bg-clouds{position:absolute;top:10px;left:0;width:100%;display:flex;gap:30px;}
+.battle-cloud{font-size:22px;opacity:0.6;animation:cloudDrift 20s linear infinite;}
+@keyframes cloudDrift{0%{transform:translateX(-60px)}100%{transform:translateX(520px)}}
+.battle-platform-enemy{position:absolute;top:80px;right:60px;width:90px;height:18px;background:rgba(0,0,0,0.18);border-radius:50%;filter:blur(2px);}
+.battle-platform-player{position:absolute;bottom:35px;left:30px;width:110px;height:22px;background:rgba(0,0,0,0.22);border-radius:50%;filter:blur(2px);}
+.enemy-sprite{position:absolute;top:10px;right:65px;width:80px;height:80px;image-rendering:pixelated;}
+.player-battle-sprite{position:absolute;bottom:38px;left:20px;width:80px;height:80px;image-rendering:pixelated;transform:scaleX(-1);}
+@keyframes hitFlash{0%,100%{filter:none}50%{filter:brightness(5) saturate(0)}}
+.enemy-hud{position:absolute;top:6px;left:6px;background:rgba(248,248,248,0.97);border:3px solid #333;padding:5px 8px;min-width:170px;border-radius:2px;box-shadow:2px 2px 0 rgba(0,0,0,0.3);}
+.player-hud{position:absolute;bottom:6px;right:6px;background:rgba(248,248,248,0.97);border:3px solid #333;padding:5px 8px;min-width:185px;border-radius:2px;box-shadow:2px 2px 0 rgba(0,0,0,0.3);}
+.hud-name-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;}
+.hud-poke-name{font-size:10px;color:#000;}
+.hud-level{font-size:8px;color:#555;}
+.hp-bar-wrap{display:flex;align-items:center;gap:4px;}
+.hp-label{font-size:8px;color:#333;width:14px;text-align:right;}
+.hp-bar-bg{flex:1;height:6px;background:#888;border-radius:3px;overflow:hidden;border:1px solid #666;}
+.hp-bar{height:100%;border-radius:3px;transition:width 0.4s ease;}
+.hp-full{background:linear-gradient(90deg,#40c840,#60e860);}
+.hp-mid{background:linear-gradient(90deg,#d8c000,#f8e020);}
+.hp-low{background:linear-gradient(90deg,#d82000,#f84020);}
+.hp-nums{font-size:8px;color:#333;margin-top:2px;text-align:right;}
+.exp-mini{height:3px;background:#5080f8;border-radius:2px;transition:width 0.5s;}
+.exp-mini-bg{height:3px;background:#333;border-radius:2px;margin-top:2px;}
+.status-badge{font-size:7px;padding:1px 4px;border-radius:2px;color:#fff;display:inline-block;margin-left:3px;}
+#battle-ui{display:flex;flex-direction:column;background:#d8d8d8;border-top:3px solid #333;flex:1;}
+#battle-log{height:56px;background:#f0f0f0;border-bottom:3px solid #333;padding:5px 8px;font-size:9px;color:#000;line-height:2;overflow:hidden;}
+#battle-actions{display:flex;flex:1;}
+.action-btn{background:linear-gradient(180deg,#f0f0f0,#d8d8d8);border:1px solid #aaa;color:#000;font-size:9px;padding:5px;cursor:pointer;font-family:'Press Start 2P',monospace;display:flex;align-items:center;gap:5px;transition:background 0.1s;}
+.action-btn:hover{background:linear-gradient(180deg,#d8e8ff,#c0d0f0);}
+.action-btn:active{background:#b8c8e8;}
+.move-btn{background:linear-gradient(180deg,#f0f0f0,#d8d8d8);border:1px solid #bbb;color:#000;font-size:9px;padding:5px 6px;cursor:pointer;font-family:'Press Start 2P',monospace;display:flex;flex-direction:column;gap:3px;transition:background 0.1s;}
+.move-btn:hover:not(:disabled){background:linear-gradient(180deg,#d8f0d8,#c0e0c0);}
+.move-btn:disabled{opacity:0.4;cursor:not-allowed;}
+.move-type-badge{font-size:7px;padding:1px 4px;border-radius:2px;color:#fff;display:inline-block;}
+.move-pp{font-size:8px;color:#666;}
+.move-pp.low-pp{color:#c03020;}
+/* Menu */
+#menu-screen{background:linear-gradient(180deg,#1a3a1a,#0a2a0a);display:flex;flex-direction:column;}
+.menu-header{background:linear-gradient(135deg,#2a6a2a,#1a5a1a);padding:10px 12px;font-size:11px;color:#90f090;border-bottom:3px solid #3a8a3a;display:flex;justify-content:space-between;align-items:center;}
+.menu-header-name{font-size:9px;color:#60c060;}
+.menu-list{flex:1;padding:8px;display:flex;flex-direction:column;gap:5px;overflow-y:auto;}
+.menu-item{background:linear-gradient(135deg,#2a5a2a,#1e4a1e);border:2px solid #3a7a3a;color:#a0e8a0;font-size:9px;padding:9px 10px;cursor:pointer;display:flex;align-items:center;gap:10px;transition:all 0.1s;box-shadow:2px 2px 0 rgba(0,0,0,0.3);}
+.menu-item:hover{background:linear-gradient(135deg,#3a7a3a,#2a6a2a);color:#c0f8c0;transform:translateX(2px);}
+.menu-item-icon{font-size:18px;width:20px;text-align:center;}
+/* Pokémon Menu */
+#pokemenu-screen{background:#0a1a0a;display:flex;flex-direction:column;}
+.pm-header{background:linear-gradient(135deg,#1a4a1a,#0e3a0e);padding:8px 10px;font-size:10px;color:#80d880;border-bottom:3px solid #2a6a2a;display:flex;justify-content:space-between;}
+.pm-list{flex:1;overflow-y:auto;padding:5px;}
+.pm-card{display:flex;align-items:center;gap:8px;background:linear-gradient(135deg,#1a3a1a,#122a12);border:2px solid #2a5a2a;padding:5px;margin-bottom:3px;cursor:pointer;transition:all 0.1s;}
+.pm-card:hover{background:linear-gradient(135deg,#2a4a2a,#1a3a1a);border-color:#3a7a3a;}
+.pm-card.fainted{opacity:0.45;border-color:#5a3a3a;}
+.pm-card.active-lead{border-color:#f0c030;box-shadow:0 0 6px rgba(240,192,48,0.4);}
+.pm-sprite{width:44px;height:44px;image-rendering:pixelated;}
+.pm-info{flex:1;min-width:0;}
+.pm-name{font-size:9px;color:#90e890;margin-bottom:2px;}
+.pm-level{font-size:8px;color:#60a860;}
+.pm-hp-bar-bg{height:4px;background:#1a1a1a;border-radius:2px;margin-top:3px;}
+.pm-hp-fill{height:100%;border-radius:2px;transition:width 0.3s;}
+.pm-types{display:flex;gap:2px;margin-top:2px;}
+.pm-back{font-size:9px;color:#5a9a5a;text-align:center;padding:7px;cursor:pointer;border-top:2px solid #1a4a1a;}
+.pm-back:hover{color:#90e890;background:#0a2a0a;}
+/* Detail */
+#detail-screen{background:#0a0a2e;display:flex;flex-direction:column;padding:8px;overflow-y:auto;}
+.detail-top{display:flex;gap:10px;align-items:flex-start;margin-bottom:8px;background:rgba(255,255,255,0.05);padding:8px;border:2px solid #2a2a6a;border-radius:4px;}
+.detail-sprite{width:80px;height:80px;image-rendering:pixelated;background:radial-gradient(circle,rgba(255,255,255,0.1),transparent);border-radius:50%;}
+.detail-info{flex:1;}
+.detail-name{font-size:12px;color:#fff;margin-bottom:5px;}
+.detail-types{display:flex;gap:4px;margin-bottom:5px;}
+.detail-level{font-size:9px;color:#8080c8;margin-bottom:3px;}
+.exp-bar-bg{height:4px;background:#1a1a3a;border-radius:2px;margin-top:2px;border:1px solid #2a2a4a;}
+.exp-bar{height:100%;background:linear-gradient(90deg,#4060e8,#80a0ff);border-radius:2px;transition:width 0.5s;}
+.exp-text{font-size:7px;color:#5a5a9a;margin-top:1px;}
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px;}
+.stat-row{background:linear-gradient(135deg,#1a1a4a,#12123a);padding:5px 7px;border-radius:3px;border:1px solid #2a2a5a;}
+.stat-label{font-size:7px;color:#8080b8;margin-bottom:3px;}
+.stat-val{font-size:10px;color:#fff;}
+.stat-bar-bg{height:3px;background:#0a0a2a;border-radius:2px;margin-top:3px;}
+.stat-bar-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,#4060e8,#80a0ff);}
+.detail-moves-title{font-size:9px;color:#8080c8;margin:8px 0 4px;border-bottom:1px solid #2a2a5a;padding-bottom:3px;}
+.move-detail-row{display:flex;justify-content:space-between;align-items:center;background:#12123a;padding:5px 7px;margin-bottom:3px;border:1px solid #2a2a5a;border-radius:2px;}
+.move-detail-name{font-size:8px;color:#d0d0f0;}
+.move-detail-info{font-size:7px;color:#7070a0;}
+.detail-back{font-size:8px;color:#5a5a9a;text-align:center;margin-top:6px;cursor:pointer;padding:5px;border:1px solid #2a2a5a;}
+.detail-back:hover{color:#a0a0e0;background:#0a0a2a;}
+/* Bag */
+#bag-screen{background:#160a2e;display:flex;flex-direction:column;}
+.bag-header{background:linear-gradient(135deg,#3a1a5a,#280e42);padding:8px 10px;font-size:10px;color:#c890f0;border-bottom:3px solid #5a2a8a;display:flex;justify-content:space-between;}
+.bag-list{flex:1;padding:6px;overflow-y:auto;}
+.bag-item{display:flex;justify-content:space-between;align-items:center;background:linear-gradient(135deg,#2a1040,#1e0a30);border:2px solid #5a2a7a;padding:7px 8px;margin-bottom:3px;cursor:pointer;transition:all 0.1s;}
+.bag-item:hover{background:linear-gradient(135deg,#3a1a50,#2a1040);border-color:#7a3a9a;}
+.bag-item-icon{font-size:16px;width:20px;}
+.bag-item-name{font-size:9px;color:#c880f0;flex:1;}
+.bag-item-qty{font-size:9px;color:#f0b0f0;background:#1a0a28;padding:1px 5px;border:1px solid #4a2a6a;}
+.bag-item-desc{font-size:7px;color:#7a50a0;margin-top:2px;}
+.bag-empty{font-size:9px;color:#5a3a7a;text-align:center;margin-top:30px;line-height:2;}
+.bag-back{font-size:8px;color:#7a4a9a;text-align:center;padding:7px;cursor:pointer;border-top:2px solid #2a1040;}
+.bag-back:hover{color:#c080f0;background:#0e0a1e;}
+/* Shop */
+#shop-screen{background:#06061e;display:flex;flex-direction:column;}
+.shop-header{background:linear-gradient(135deg,#1a1a5a,#0e0e3a);padding:8px 10px;font-size:10px;color:#9090f8;border-bottom:3px solid #3a3a8a;display:flex;justify-content:space-between;}
+.shop-money{font-size:9px;color:#f8d030;padding:5px 8px;background:#0a0a2a;border-bottom:1px solid #2a2a5a;}
+.shop-money span{color:#f0c820;}
+.shop-list{flex:1;padding:5px;overflow-y:auto;}
+.shop-item{display:flex;justify-content:space-between;align-items:center;background:linear-gradient(135deg,#12124a,#0a0a38);border:2px solid #3a3a7a;padding:7px 8px;margin-bottom:3px;cursor:pointer;transition:all 0.1s;}
+.shop-item:hover{background:linear-gradient(135deg,#1e1e5a,#12124a);border-color:#5a5aa0;}
+.shop-item-icon{font-size:16px;width:20px;}
+.shop-item-name{font-size:9px;color:#9090f8;flex:1;}
+.shop-item-price{font-size:9px;color:#f8d030;}
+.shop-item-owned{font-size:8px;color:#5050a0;margin-left:6px;}
+.shop-npc{font-size:9px;color:#7070c0;padding:8px;background:#0a0a2a;border:2px solid #2a2a5a;margin:5px;line-height:2;}
+.shop-close{font-size:8px;color:#6060a0;text-align:center;padding:7px;cursor:pointer;border-top:2px solid #1a1a4a;}
+.shop-close:hover{color:#a0a0f0;background:#050520;}
+/* Dialog */
+.dialog-box{background:#f8f8f8;border:4px solid #222;margin:6px 8px;padding:8px 10px;font-size:9px;color:#000;line-height:2.2;min-height:54px;box-shadow:3px 3px 0 rgba(0,0,0,0.5);position:relative;}
+.dialog-box::before{content:'▶';position:absolute;bottom:6px;right:8px;animation:blink 0.6s step-end infinite;font-size:10px;}
+/* Game Over */
+#gameover-screen{background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.go-title{font-size:15px;color:#f83020;text-shadow:2px 2px 0 #600000,0 0 20px rgba(248,48,32,0.6);margin-bottom:16px;}
+.go-sub{font-size:9px;color:#666;margin-bottom:6px;text-align:center;line-height:2;}
+.go-money{font-size:9px;color:#f8d030;margin-bottom:20px;}
+.go-btn{background:linear-gradient(135deg,#2a2a2a,#1a1a1a);color:#a0a0a0;font-size:9px;padding:10px 18px;border:2px solid #3a3a3a;cursor:pointer;font-family:'Press Start 2P',monospace;transition:all 0.15s;box-shadow:2px 2px 0 #000;}
+.go-btn:hover{background:linear-gradient(135deg,#3a3a3a,#2a2a2a);color:#d0d0d0;}
+.fade-in{animation:fadeIn 0.25s ease;}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+#notification{position:absolute;top:34px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.85);color:#fff;font-size:8px;padding:5px 10px;border:2px solid #555;border-radius:4px;pointer-events:none;opacity:0;transition:opacity 0.2s;z-index:200;white-space:nowrap;}
+#notification.show{opacity:1;}
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-track{background:#0a0a0a;}
+::-webkit-scrollbar-thumb{background:#3a3a6a;border-radius:2px;}
+</style>
+</head>
+<body>
+<div id="gba-shell">
+  <div id="gba-label">POKÉJOURNEY ADVANCE</div>
+  <div id="screen-bezel">
+    <div id="screen">
+      <div id="notification"></div>
+    </div>
+  </div>
+  <div id="gba-controls">
+    <div class="dpad" id="dpad">
+      <div class="dpad-btn dpad-up" data-dir="up">▲</div>
+      <div class="dpad-btn dpad-down" data-dir="down">▼</div>
+      <div class="dpad-btn dpad-left" data-dir="left">◀</div>
+      <div class="dpad-btn dpad-right" data-dir="right">▶</div>
+      <div class="dpad-center"></div>
+    </div>
+    <div class="sys-btns">
+      <div class="sys-btn" id="select-btn">SEL</div>
+      <div class="sys-btn" id="start-btn">STR</div>
+    </div>
+    <div class="ab-btns">
+      <button class="ab-btn btn-b" id="btn-b">B</button>
+      <button class="ab-btn btn-a" id="btn-a">A</button>
+    </div>
+  </div>
+</div>
+<script>
+// ============================================================
+//  PokéJourney — Complete Pokémon RPG
+// ============================================================
+
+// ---- TYPE CHART ----
+const EFF={Normal:{Rock:0.5,Ghost:0,Steel:0.5},Fire:{Fire:0.5,Water:0.5,Grass:2,Ice:2,Bug:2,Rock:0.5,Dragon:0.5,Steel:2},Water:{Fire:2,Water:0.5,Grass:0.5,Ground:2,Rock:2,Dragon:0.5},Grass:{Fire:0.5,Water:2,Grass:0.5,Poison:0.5,Ground:2,Flying:0.5,Bug:0.5,Rock:2,Dragon:0.5,Steel:0.5},Electric:{Water:2,Grass:0.5,Electric:0.5,Ground:0,Flying:2,Dragon:0.5},Ice:{Water:0.5,Grass:2,Ice:0.5,Ground:2,Flying:2,Dragon:2,Steel:0.5},Fighting:{Normal:2,Ice:2,Poison:0.5,Flying:0.5,Psychic:0.5,Bug:0.5,Rock:2,Ghost:0,Dark:2,Steel:2,Fairy:0.5},Poison:{Grass:2,Poison:0.5,Ground:0.5,Rock:0.5,Ghost:0.5,Steel:0,Fairy:2},Ground:{Fire:2,Electric:2,Grass:0.5,Poison:2,Flying:0,Bug:0.5,Rock:2,Steel:2},Flying:{Grass:2,Electric:0.5,Fighting:2,Bug:2,Rock:0.5,Steel:0.5},Psychic:{Fighting:2,Poison:2,Psychic:0.5,Dark:0,Steel:0.5},Bug:{Fire:0.5,Grass:2,Fighting:0.5,Flying:0.5,Psychic:2,Ghost:0.5,Dark:2,Steel:0.5,Fairy:0.5},Rock:{Fire:2,Ice:2,Fighting:0.5,Ground:0.5,Flying:2,Bug:2,Steel:0.5},Ghost:{Normal:0,Psychic:2,Ghost:2,Dark:0.5},Dragon:{Dragon:2,Steel:0.5,Fairy:0},Dark:{Fighting:0.5,Psychic:2,Ghost:2,Dark:0.5,Fairy:0.5},Steel:{Fire:0.5,Water:0.5,Electric:0.5,Ice:2,Rock:2,Steel:0.5,Fairy:2},Fairy:{Fire:0.5,Fighting:2,Poison:0.5,Dragon:2,Dark:2,Steel:0.5}};
+function getEff(atkT,defTs){let m=1;for(const t of defTs)m*=(EFF[atkT]?.[t]??1);return m;}
+
+// ---- MOVES ----
+const MOVES={
+  tackle:{name:'Tackle',type:'Normal',cat:'physical',power:40,acc:100,pp:35},
+  scratch:{name:'Scratch',type:'Normal',cat:'physical',power:40,acc:100,pp:35},
+  growl:{name:'Growl',type:'Normal',cat:'status',power:0,acc:100,pp:40,eff:'lower_atk'},
+  ember:{name:'Ember',type:'Fire',cat:'special',power:40,acc:100,pp:25,eff:'burn_10'},
+  flamethrower:{name:'Flamethrower',type:'Fire',cat:'special',power:90,acc:100,pp:15,eff:'burn_10'},
+  watergun:{name:'Water Gun',type:'Water',cat:'special',power:40,acc:100,pp:25},
+  surf:{name:'Surf',type:'Water',cat:'special',power:90,acc:100,pp:15},
+  vinewhip:{name:'Vine Whip',type:'Grass',cat:'physical',power:45,acc:100,pp:25},
+  razorleaf:{name:'Razor Leaf',type:'Grass',cat:'physical',power:55,acc:95,pp:25,eff:'crit_high'},
+  thundershock:{name:'ThunderShock',type:'Electric',cat:'special',power:40,acc:100,pp:30,eff:'para_10'},
+  thunderbolt:{name:'Thunderbolt',type:'Electric',cat:'special',power:90,acc:100,pp:15,eff:'para_10'},
+  quickattack:{name:'Quick Attack',type:'Normal',cat:'physical',power:40,acc:100,pp:30},
+  bite:{name:'Bite',type:'Dark',cat:'physical',power:60,acc:100,pp:25},
+  poisonsting:{name:'Poison Sting',type:'Poison',cat:'physical',power:15,acc:100,pp:35,eff:'poison_30'},
+  bodyslam:{name:'Body Slam',type:'Normal',cat:'physical',power:85,acc:100,pp:15,eff:'para_30'},
+  headbutt:{name:'Headbutt',type:'Normal',cat:'physical',power:70,acc:100,pp:15},
+  wingattack:{name:'Wing Attack',type:'Flying',cat:'physical',power:60,acc:100,pp:35},
+  gust:{name:'Gust',type:'Flying',cat:'special',power:40,acc:100,pp:35},
+  confusion:{name:'Confusion',type:'Psychic',cat:'special',power:50,acc:100,pp:25},
+  psychic_m:{name:'Psychic',type:'Psychic',cat:'special',power:90,acc:100,pp:10},
+  rockthrow:{name:'Rock Throw',type:'Rock',cat:'physical',power:50,acc:90,pp:15},
+  rockslide:{name:'Rock Slide',type:'Rock',cat:'physical',power:75,acc:90,pp:10},
+  earthquake:{name:'Earthquake',type:'Ground',cat:'physical',power:100,acc:100,pp:10},
+  shadowball:{name:'Shadow Ball',type:'Ghost',cat:'special',power:80,acc:100,pp:15},
+  icebeam:{name:'Ice Beam',type:'Ice',cat:'special',power:90,acc:100,pp:10,eff:'freeze_10'},
+  splash:{name:'Splash',type:'Normal',cat:'status',power:0,acc:100,pp:40},
+  poisonpowder:{name:'PoisonPowder',type:'Poison',cat:'status',power:0,acc:75,pp:35,eff:'poison_100'},
+  sleeppowder:{name:'Sleep Powder',type:'Grass',cat:'status',power:0,acc:75,pp:15,eff:'sleep_100'},
+  absorb:{name:'Absorb',type:'Grass',cat:'special',power:20,acc:100,pp:25,eff:'drain'},
+  megadrain:{name:'Mega Drain',type:'Grass',cat:'special',power:40,acc:100,pp:15,eff:'drain'},
+  lick:{name:'Lick',type:'Ghost',cat:'physical',power:30,acc:100,pp:30,eff:'para_30'},
+  nightshade:{name:'Night Shade',type:'Ghost',cat:'special',power:0,acc:100,pp:15,eff:'level_dmg'},
+  bubble:{name:'Bubble',type:'Water',cat:'special',power:40,acc:100,pp:30},
+  withdraw:{name:'Withdraw',type:'Water',cat:'status',power:0,acc:100,pp:40,eff:'raise_def'},
+  slash:{name:'Slash',type:'Normal',cat:'physical',power:70,acc:100,pp:20,eff:'crit_high'},
+  tailwhip:{name:'Tail Whip',type:'Normal',cat:'status',power:0,acc:100,pp:30,eff:'lower_def'},
+  stomp:{name:'Stomp',type:'Normal',cat:'physical',power:65,acc:100,pp:20},
+  slam:{name:'Slam',type:'Normal',cat:'physical',power:80,acc:75,pp:20},
+  cut:{name:'Cut',type:'Normal',cat:'physical',power:50,acc:95,pp:30},
+  stringshot:{name:'String Shot',type:'Bug',cat:'status',power:0,acc:95,pp:40,eff:'lower_spd'},
+  karatechop:{name:'Karate Chop',type:'Fighting',cat:'physical',power:50,acc:100,pp:25,eff:'crit_high'},
+  wrap:{name:'Wrap',type:'Normal',cat:'physical',power:15,acc:90,pp:20},
+};
+
+// ---- POKEMON DATA ----
+const PKDATA={
+  1:{name:'Bulbasaur',types:['Grass','Poison'],stats:{hp:45,atk:49,def:49,spa:65,spd:65,spe:45},ls:{1:['tackle','growl'],7:['vinewhip'],13:['poisonpowder'],15:['sleeppowder'],20:['razorleaf'],23:['absorb']},eAt:16,eTo:2,cr:45,ey:64,eg:'medium_slow'},
+  2:{name:'Ivysaur',types:['Grass','Poison'],stats:{hp:60,atk:62,def:63,spa:80,spd:80,spe:60},ls:{1:['tackle','vinewhip'],22:['razorleaf'],30:['megadrain']},eAt:32,eTo:3,cr:45,ey:141,eg:'medium_slow'},
+  3:{name:'Venusaur',types:['Grass','Poison'],stats:{hp:80,atk:82,def:83,spa:100,spd:100,spe:80},ls:{1:['vinewhip','razorleaf'],40:['megadrain'],50:['sleeppowder']},cr:45,ey:208,eg:'medium_slow'},
+  4:{name:'Charmander',types:['Fire'],stats:{hp:39,atk:52,def:43,spa:60,spd:50,spe:65},ls:{1:['scratch','growl'],9:['ember'],15:['slash'],22:['headbutt']},eAt:16,eTo:5,cr:45,ey:62,eg:'medium_slow'},
+  5:{name:'Charmeleon',types:['Fire'],stats:{hp:58,atk:64,def:58,spa:80,spd:65,spe:80},ls:{1:['scratch','ember'],24:['flamethrower'],33:['slash']},eAt:36,eTo:6,cr:45,ey:142,eg:'medium_slow'},
+  6:{name:'Charizard',types:['Fire','Flying'],stats:{hp:78,atk:84,def:78,spa:109,spd:85,spe:100},ls:{1:['ember','flamethrower'],45:['wingattack']},cr:45,ey:209,eg:'medium_slow'},
+  7:{name:'Squirtle',types:['Water'],stats:{hp:44,atk:48,def:65,spa:50,spd:64,spe:43},ls:{1:['tackle','tailwhip'],7:['bubble'],13:['withdraw'],22:['watergun']},eAt:16,eTo:8,cr:45,ey:63,eg:'medium_slow'},
+  8:{name:'Wartortle',types:['Water'],stats:{hp:59,atk:63,def:80,spa:65,spd:80,spe:58},ls:{1:['bubble','withdraw'],22:['watergun'],32:['surf']},eAt:36,eTo:9,cr:45,ey:142,eg:'medium_slow'},
+  9:{name:'Blastoise',types:['Water'],stats:{hp:79,atk:83,def:100,spa:85,spd:105,spe:78},ls:{1:['watergun','surf'],40:['slam']},cr:45,ey:210,eg:'medium_slow'},
+  16:{name:'Pidgey',types:['Normal','Flying'],stats:{hp:40,atk:45,def:40,spa:35,spd:35,spe:56},ls:{1:['tackle','gust'],5:['quickattack'],12:['wingattack']},eAt:18,eTo:17,cr:255,ey:50,eg:'medium_slow'},
+  17:{name:'Pidgeotto',types:['Normal','Flying'],stats:{hp:63,atk:60,def:55,spa:50,spd:50,spe:71},ls:{1:['gust','quickattack'],22:['wingattack']},eAt:36,eTo:18,cr:120,ey:122,eg:'medium_slow'},
+  18:{name:'Pidgeot',types:['Normal','Flying'],stats:{hp:83,atk:80,def:75,spa:70,spd:70,spe:101},ls:{1:['gust','wingattack']},cr:45,ey:172,eg:'medium_slow'},
+  19:{name:'Rattata',types:['Normal'],stats:{hp:30,atk:56,def:35,spa:25,spd:35,spe:72},ls:{1:['tackle','tailwhip'],7:['quickattack'],14:['bite']},eAt:20,eTo:20,cr:255,ey:51,eg:'medium_fast'},
+  20:{name:'Raticate',types:['Normal'],stats:{hp:55,atk:81,def:60,spa:50,spd:70,spe:97},ls:{1:['tackle','quickattack','bite'],24:['slam']},cr:127,ey:116,eg:'medium_fast'},
+  25:{name:'Pikachu',types:['Electric'],stats:{hp:35,atk:55,def:40,spa:50,spd:50,spe:90},ls:{1:['thundershock','growl'],9:['quickattack'],26:['thunderbolt']},cr:190,ey:112,eg:'medium_fast'},
+  41:{name:'Zubat',types:['Poison','Flying'],stats:{hp:40,atk:45,def:35,spa:30,spd:40,spe:55},ls:{1:['scratch','poisonsting'],8:['bite'],16:['wingattack']},eAt:22,eTo:42,cr:255,ey:49,eg:'medium_fast'},
+  42:{name:'Golbat',types:['Poison','Flying'],stats:{hp:75,atk:80,def:70,spa:65,spd:75,spe:90},ls:{1:['bite','wingattack']},cr:90,ey:171,eg:'medium_fast'},
+  43:{name:'Oddish',types:['Grass','Poison'],stats:{hp:45,atk:50,def:55,spa:75,spd:65,spe:30},ls:{1:['absorb'],13:['poisonpowder'],15:['sleeppowder'],19:['megadrain']},eAt:21,eTo:44,cr:255,ey:64,eg:'medium_slow'},
+  44:{name:'Gloom',types:['Grass','Poison'],stats:{hp:60,atk:65,def:70,spa:85,spd:75,spe:40},ls:{1:['absorb','megadrain'],28:['sleeppowder']},cr:120,ey:118,eg:'medium_slow'},
+  52:{name:'Meowth',types:['Normal'],stats:{hp:40,atk:45,def:35,spa:40,spd:40,spe:90},ls:{1:['scratch','growl'],12:['bite'],17:['slash']},eAt:28,eTo:53,cr:255,ey:69,eg:'medium_fast'},
+  53:{name:'Persian',types:['Normal'],stats:{hp:65,atk:70,def:60,spa:65,spd:65,spe:115},ls:{1:['scratch','bite','slash']},cr:120,ey:148,eg:'medium_fast'},
+  63:{name:'Abra',types:['Psychic'],stats:{hp:25,atk:20,def:15,spa:105,spd:55,spe:90},ls:{1:['confusion']},eAt:16,eTo:64,cr:200,ey:73,eg:'medium_slow'},
+  64:{name:'Kadabra',types:['Psychic'],stats:{hp:40,atk:35,def:30,spa:120,spd:70,spe:105},ls:{1:['confusion'],22:['psychic_m']},cr:100,ey:145,eg:'medium_slow'},
+  74:{name:'Geodude',types:['Rock','Ground'],stats:{hp:40,atk:80,def:100,spa:30,spd:30,spe:20},ls:{1:['tackle','rockthrow'],11:['rockslide']},eAt:25,eTo:75,cr:255,ey:60,eg:'medium_slow'},
+  75:{name:'Graveler',types:['Rock','Ground'],stats:{hp:55,atk:95,def:115,spa:45,spd:45,spe:35},ls:{1:['rockthrow','rockslide'],26:['earthquake']},eAt:36,eTo:76,cr:120,ey:137,eg:'medium_slow'},
+  76:{name:'Golem',types:['Rock','Ground'],stats:{hp:80,atk:120,def:130,spa:55,spd:65,spe:45},ls:{1:['rockslide','earthquake']},cr:45,ey:177,eg:'medium_slow'},
+  92:{name:'Gastly',types:['Ghost','Poison'],stats:{hp:30,atk:35,def:30,spa:100,spd:35,spe:80},ls:{1:['lick','nightshade'],27:['shadowball']},eAt:25,eTo:93,cr:190,ey:62,eg:'medium_slow'},
+  93:{name:'Haunter',types:['Ghost','Poison'],stats:{hp:45,atk:50,def:45,spa:115,spd:55,spe:95},ls:{1:['lick','shadowball'],32:['psychic_m']},cr:90,ey:126,eg:'medium_slow'},
+  129:{name:'Magikarp',types:['Water'],stats:{hp:20,atk:10,def:55,spa:15,spd:20,spe:80},ls:{1:['splash'],15:['tackle']},eAt:20,eTo:130,cr:255,ey:40,eg:'slow'},
+  130:{name:'Gyarados',types:['Water','Flying'],stats:{hp:95,atk:125,def:79,spa:60,spd:100,spe:81},ls:{1:['bite','watergun'],30:['bodyslam'],35:['surf']},cr:45,ey:189,eg:'slow'},
+  133:{name:'Eevee',types:['Normal'],stats:{hp:55,atk:55,def:50,spa:45,spd:65,spe:55},ls:{1:['tackle','growl'],23:['quickattack'],30:['bite']},cr:45,ey:92,eg:'medium_fast'},
+};
+
+// ---- MAPS (20 wide, padded to 30 by preprocessMaps) ----
+const MAPS={
+  pallet:{
+    name:'Pallet Town',w:20,h:18,
+    tiles:[
+      [1,1,1,1,1,1,1,1,0,0,0,0,1,1,1,1,1,1,1,1],
+      [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+      [1,0,4,4,0,0,0,7,7,0,0,7,7,0,0,0,8,8,0,1],
+      [1,0,4,4,0,0,0,7,7,0,0,7,7,0,0,0,8,8,0,1],
+      [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+      [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+      [1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1],
+      [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+      [1,0,5,5,0,0,0,0,0,0,0,0,0,0,0,0,5,5,0,1],
+      [1,0,5,5,0,0,0,0,0,0,0,0,0,0,0,0,5,5,0,1],
+      [1,0,0,0,0,0,2,2,0,0,0,0,0,0,0,0,0,0,0,1],
+      [1,0,0,0,0,0,2,2,0,0,0,0,0,0,0,0,0,0,0,1],
+      [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+      [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+      [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+      [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+      [1,1,1,1,1,1,1,1,0,0,0,0,1,1,1,1,1,1,1,1],
+      [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+    ],
+    sx:10,sy:14,enc:{pokes:[{id:16,mn:2,mx:4,r:40},{id:19,mn:2,mx:4,r:40},{id:16,mn:3,mx:5,r:20}],steps:4},
+    exits:{north:{target:'route1',ex:10,ey:16}},
+    bldgs:{
+      '2,2':{t:'PC',n:'Pokémon Center'},'3,2':{t:'PC',n:'Pokémon Center'},
+      '2,3':{t:'PC',n:'Pokémon Center'},'3,3':{t:'PC',n:'Pokémon Center'},
+      '7,2':{t:'HOUSE',n:'Your House'},'8,2':{t:'HOUSE',n:'Your House'},
+      '7,3':{t:'HOUSE',n:'Your House'},'8,3':{t:'HOUSE',n:'Your House'},
+      '11,2':{t:'HOUSE',n:"Rival's House"},'12,2':{t:'HOUSE',n:"Rival's House"},
+      '11,3':{t:'HOUSE',n:"Rival's House"},'12,3':{t:'HOUSE',n:"Rival's House"},
+      '16,2':{t:'LAB',n:"Prof. Oak's Lab"},'17,2':{t:'LAB',n:"Prof. Oak's Lab"},
+      '16,3':{t:'LAB',n:"Prof. Oak's Lab"},'17,3':{t:'LAB',n:"Prof. Oak's Lab"},
+      '2,8':{t:'MART',n:'Poké Mart'},'3,8':{t:'MART',n:'Poké Mart'},
+      '2,9':{t:'MART',n:'Poké Mart'},'3,9':{t:'MART',n:'Poké Mart'},
+      '16,8':{t:'MART',n:'Poké Mart'},'17,8':{t:'MART',n:'Poké Mart'},
+      '16,9':{t:'MART',n:'Poké Mart'},'17,9':{t:'MART',n:'Poké Mart'},
+    }
+  },
+  route1:{
+    name:'Route 1',w:20,h:22,
+    tiles:[
+      [1,1,1,1,1,1,1,1,0,0,0,0,1,1,1,1,1,1,1,1],
+      [1,2,2,2,2,1,1,0,0,0,0,0,0,1,1,2,2,2,2,1],
+      [1,2,2,2,1,1,0,0,0,0,0,0,0,0,1,1,2,2,2,1],
+      [1,2,2,1,1,1,2,0,0,0,0,0,0,2,1,1,1,2,2,1],
+      [1,2,1,1,1,2,2,2,0,0,0,0,2,2,2,1,1,1,2,1],
+      [1,1,1,1,2,2,2,2,0,0,0,0,2,2,2,2,1,1,1,1],
+      [1,1,1,2,2,2,2,2,0,0,0,0,2,2,2,2,2,1,1,1],
+      [1,1,2,2,2,2,2,2,0,0,0,0,2,2,2,2,2,2,1,1],
+      [1,2,2,2,2,2,2,2,0,0,0,0,2,2,2,2,2,2,2,1],
+      [1,2,2,2,2,2,2,1,0,0,0,0,1,2,2,2,2,2,2,1],
+      [1,2,2,2,2,2,1,1,0,0,0,0,1,1,2,2,2,2,2,1],
+      [1,2,2,2,2,1,1,1,0,0,0,0,1,1,1,2,2,2,2,1],
+      [1,2,2,2,1,1,1,2,0,0,0,0,2,1,1,1,2,2,2,1],
+      [1,2,2,1,1,1,2,2,0,0,0,0,2,2,1,1,1,2,2,1],
+      [1,2,1,1,1,2,2,2,0,0,0,0,2,2,2,1,1,1,2,1],
+      [1,1,1,1,2,2,2,2,0,0,0,0,2,2,2,2,1,1,1,1],
+      [1,1,1,2,2,2,2,2,0,0,0,0,2,2,2,2,2,1,1,1],
+      [1,1,2,2,2,2,2,2,0,0,0,0,2,2,2,2,2,2,1,1],
+      [1,2,2,2,2,2,2,2,0,0,0,0,2,2,2,2,2,2,2,1],
+      [1,2,2,2,2,2,2,1,0,0,0,0,1,2,2,2,2,2,2,1],
+      [1,2,2,2,2,2,1,0,0,0,0,0,0,1,2,2,2,2,2,1],
+      [1,1,1,1,1,1,1,1,0,0,0,0,1,1,1,1,1,1,1,1],
+    ],
+    sx:10,sy:1,
+    enc:{pokes:[{id:16,mn:2,mx:4,r:40},{id:19,mn:2,mx:4,r:40},{id:16,mn:3,mx:5,r:20}],steps:4},
+    exits:{south:{target:'pallet',ex:10,ey:20},north:{target:'viridian',ex:10,ey:19}},
+  },
+  viridian:{
+    name:'Viridian City',w:20,h:20,
+    tiles:[
+      [1,1,1,1,1,1,1,1,0,0,0,0,1,1,1,1,1,1,1,1],
+      [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+      [1,0,4,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+      [1,0,4,4,0,0,0,0,0,0,0,0,0,0,0,5,5,0,0,1],
+      [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,5,5,0,0,1],
+      [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+      [1,0,7,7,0,0,0,6,6,0,0,0,0,7,7,0,0,0,0,1],
+      [1,0,7,7,0,0,0,6,6,0,0,0,0,7,7,0,0,0,0,1],
+      [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+      [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+      [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+      [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+      [1,0,7,7,0,0,0,0,0,0,0,0,0,0,7,7,0,0,0,1],
+      [1,0,7,7,0,0,0,0,0,0,0,0,0,0,7,7,0,0,0,1],
+      [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+      [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+      [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+      [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+      [1,1,1,1,1,1,1,1,0,0,0,0,1,1,1,1,1,1,1,1],
+      [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+    ],
+    sx:10,sy:2,enc:null,
+    exits:{south:{target:'route1',ex:10,ey:1},north:{target:'route2',ex:10,ey:17}},
+    bldgs:{
+      '2,2':{t:'PC'},'3,2':{t:'PC'},'2,3':{t:'PC'},'3,3':{t:'PC'},
+      '15,3':{t:'MART'},'16,3':{t:'MART'},'15,4':{t:'MART'},'16,4':{t:'MART'},
+      '7,6':{t:'GYM',n:'Viridian Gym',badge:'Earth Badge',leader:{name:'Giovanni',team:[{id:74,lv:12},{id:75,lv:14}],reward:1500}},
+      '8,6':{t:'GYM',n:'Viridian Gym',badge:'Earth Badge',leader:{name:'Giovanni',team:[{id:74,lv:12},{id:75,lv:14}],reward:1500}},
+      '7,7':{t:'GYM',n:'Viridian Gym',badge:'Earth Badge',leader:{name:'Giovanni',team:[{id:74,lv:12},{id:75,lv:14}],reward:1500}},
+      '8,7':{t:'GYM',n:'Viridian Gym',badge:'Earth Badge',leader:{name:'Giovanni',team:[{id:74,lv:12},{id:75,lv:14}],reward:1500}},
+      '2,6':{t:'HOUSE'},'3,6':{t:'HOUSE'},'2,7':{t:'HOUSE'},'3,7':{t:'HOUSE'},
+      '13,6':{t:'HOUSE'},'14,6':{t:'HOUSE'},'13,7':{t:'HOUSE'},'14,7':{t:'HOUSE'},
+      '2,12':{t:'HOUSE'},'3,12':{t:'HOUSE'},'2,13':{t:'HOUSE'},'3,13':{t:'HOUSE'},
+      '14,12':{t:'HOUSE'},'15,12':{t:'HOUSE'},'14,13':{t:'HOUSE'},'15,13':{t:'HOUSE'},
+    }
+  },
+  route2:{
+    name:'Route 2',w:20,h:22,
+    tiles:[
+      [1,1,1,1,1,1,1,1,0,0,0,0,1,1,1,1,1,1,1,1],
+      [1,2,2,2,2,2,1,0,0,0,0,0,0,1,2,2,2,2,2,1],
+      [1,2,2,2,2,1,1,0,0,0,0,0,0,1,1,2,2,2,2,1],
+      [1,2,2,2,1,1,1,0,0,0,0,0,0,1,1,1,2,2,2,1],
+      [1,2,2,1,1,1,2,2,0,0,0,0,2,2,1,1,1,2,2,1],
+      [1,2,1,1,1,2,2,2,0,0,0,0,2,2,2,1,1,1,2,1],
+      [1,1,1,1,2,2,2,2,0,0,0,0,2,2,2,2,1,1,1,1],
+      [1,1,1,2,2,2,2,2,0,0,0,0,2,2,2,2,2,1,1,1],
+      [1,1,2,2,2,2,2,2,0,0,0,0,2,2,2,2,2,2,1,1],
+      [1,2,2,2,2,2,2,2,0,0,0,0,2,2,2,2,2,2,2,1],
+      [1,2,2,2,2,2,2,2,0,0,0,0,2,2,2,2,2,2,2,1],
+      [1,2,2,2,2,2,2,2,0,0,0,0,2,2,2,2,2,2,2,1],
+      [1,1,2,2,2,2,2,2,0,0,0,0,2,2,2,2,2,2,1,1],
+      [1,1,1,2,2,2,2,2,0,0,0,0,2,2,2,2,2,1,1,1],
+      [1,1,1,1,2,2,2,2,0,0,0,0,2,2,2,2,1,1,1,1],
+      [1,2,1,1,1,2,2,2,0,0,0,0,2,2,2,1,1,1,2,1],
+      [1,2,2,1,1,1,2,2,0,0,0,0,2,2,1,1,1,2,2,1],
+      [1,2,2,2,1,1,1,0,0,0,0,0,0,1,1,1,2,2,2,1],
+      [1,2,2,2,2,1,1,0,0,0,0,0,0,1,1,2,2,2,2,1],
+      [1,2,2,2,2,2,1,0,0,0,0,0,0,1,2,2,2,2,2,1],
+      [1,2,2,2,2,2,1,0,0,0,0,0,0,1,2,2,2,2,2,1],
+      [1,1,1,1,1,1,1,1,0,0,0,0,1,1,1,1,1,1,1,1],
+    ],
+    sx:10,sy:1,
+    enc:{pokes:[{id:16,mn:3,mx:6,r:20},{id:19,mn:3,mx:6,r:20},{id:43,mn:3,mx:7,r:20},{id:41,mn:4,mx:8,r:20},{id:25,mn:5,mx:9,r:10},{id:63,mn:5,mx:8,r:10}],steps:3},
+    exits:{south:{target:'viridian',ex:10,ey:1}},
+  }
+};
+
+// ---- ITEMS ----
+const ITEMS={
+  pokeball:{name:'Poké Ball',icon:'🔴',cm:1,price:200,heal:0,t:'ball',desc:'A standard Poké Ball.'},
+  greatball:{name:'Great Ball',icon:'🔵',cm:1.5,price:600,heal:0,t:'ball',desc:'Better catch rate.'},
+  ultraball:{name:'Ultra Ball',icon:'🟡',cm:2,price:1200,heal:0,t:'ball',desc:'High-performance ball.'},
+  potion:{name:'Potion',icon:'💊',cm:0,price:300,heal:20,t:'heal',desc:'Restores 20 HP.'},
+  superpotion:{name:'Super Pot.',icon:'💊',cm:0,price:700,heal:50,t:'heal',desc:'Restores 50 HP.'},
+  maxpotion:{name:'Max Potion',icon:'💊',cm:0,price:2500,heal:999,t:'heal',desc:'Fully restores HP.'},
+  antidote:{name:'Antidote',icon:'🟢',cm:0,price:100,heal:0,t:'status',cures:'poison',desc:'Cures Poison.'},
+  awakening:{name:'Awakening',icon:'⭐',cm:0,price:250,heal:0,t:'status',cures:'sleep',desc:'Cures Sleep.'},
+  fullheal:{name:'Full Heal',icon:'✨',cm:0,price:600,heal:0,t:'status',cures:'all',desc:'Cures any status.'},
+};
+const SHOP_STOCK={
+  pallet:[],route1:[],
+  viridian:['pokeball','greatball','potion','superpotion','antidote','awakening','fullheal'],
+  route2:['pokeball','greatball','ultraball','potion','superpotion','maxpotion','antidote','awakening','fullheal'],
+};
+
+// ---- GAME STATE ----
+let GS={scene:'title',player:null,battle:null,dialog:{msg:'',cb:null},prevScene:'overworld',shopArea:null,viewingPoke:null,nameInput:'',bagMode:null,battleAnimating:false};
+
+// ---- CANVAS GLOBALS ----
+let animFrame=0,playerStep=0;
+const TS=16,CANVAS_W=480,CANVAS_H=272,VW=30,VH=17;
+
+// ---- HELPERS ----
+const rnd=n=>Math.floor(Math.random()*n);
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const spriteUrl=id=>`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png`;
+const typeColors={Normal:'#A8A878',Fire:'#F08030',Water:'#6890F0',Grass:'#78C850',Electric:'#F8D030',Ice:'#98D8D8',Fighting:'#C03028',Poison:'#A040A0',Ground:'#E0C068',Flying:'#A890F0',Psychic:'#F85888',Bug:'#A8B820',Rock:'#B8A038',Ghost:'#705898',Dragon:'#7038F8',Dark:'#705848',Steel:'#B8B8D0',Fairy:'#EE99AC'};
+const statusColors={poison:'#A040A0',burn:'#F08030',sleep:'#7070A0',paralysis:'#F8D030',freeze:'#98D8D8'};
+const statusAbbr={poison:'PSN',burn:'BRN',sleep:'SLP',paralysis:'PAR',freeze:'FRZ'};
+const catIcon={physical:'⚔️',special:'✨',status:'🔵'};
+
+function notify(msg,dur=1500){
+  const el=document.getElementById('notification');if(!el)return;
+  el.textContent=msg;el.classList.add('show');clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('show'),dur);
+}
+
+function expForLevel(lv,eg='medium_slow'){
+  if(lv<=1)return 0;
+  switch(eg){
+    case'fast':return Math.floor(4*lv*lv*lv/5);
+    case'medium_fast':return lv*lv*lv;
+    case'medium_slow':return Math.max(0,Math.floor(6/5*lv*lv*lv-15*lv*lv+100*lv-140));
+    case'slow':return Math.floor(5*lv*lv*lv/4);
+    default:return lv*lv*lv;
+  }
+}
+
+function calcStats(p){
+  const b=PKDATA[p.id].stats,lv=p.level,iv=p.ivs;
+  p.maxHp=Math.floor(((2*b.hp+iv.hp)*lv/100)+lv+10);
+  p.atk=Math.floor(((2*b.atk+iv.atk)*lv/100)+5);
+  p.def=Math.floor(((2*b.def+iv.def)*lv/100)+5);
+  p.spa=Math.floor(((2*b.spa+iv.spa)*lv/100)+5);
+  p.spd=Math.floor(((2*b.spd+iv.spd)*lv/100)+5);
+  p.spe=Math.floor(((2*b.spe+iv.spe)*lv/100)+5);
+}
+
+function createPoke(id,level,wild=false){
+  const base=PKDATA[id];if(!base)return null;
+  const p={id,name:base.name,types:[...base.types],level,
+    exp:expForLevel(level,base.eg||'medium_slow'),
+    expNext:expForLevel(level+1,base.eg||'medium_slow'),
+    moves:[],maxHp:0,hp:0,atk:0,def:0,spa:0,spd:0,spe:0,
+    status:null,statusTurns:0,isWild:wild,
+    ivs:{hp:rnd(32),atk:rnd(32),def:rnd(32),spa:rnd(32),spd:rnd(32),spe:rnd(32)},
+    pp:{},stages:{atk:0,def:0,spa:0,spd:0,spe:0,acc:0,eva:0},nickname:null};
+  calcStats(p);p.hp=p.maxHp;
+  const ls=base.ls||{},learned=[];
+  for(const[lstr,ms]of Object.entries(ls)){if(parseInt(lstr)<=level)learned.push(...ms);}
+  const unique=[...new Set(learned)].slice(-4);
+  p.moves=unique.filter(m=>MOVES[m]);
+  if(p.moves.length===0)p.moves=['tackle'];
+  for(const m of p.moves)p.pp[m]=MOVES[m].pp;
+  return p;
+}
+
+function getStageMult(stage){return stage>=0?(2+stage)/2:2/(2-stage);}
+function getStatS(p,s){return Math.floor(p[s]*getStageMult(p.stages[s]||0));}
+
+function calcDmg(att,def,mid){
+  const mv=MOVES[mid];if(!mv||mv.power===0)return{dmg:0,eff:1,crit:false};
+  let as=mv.cat==='physical'?getStatS(att,'atk'):getStatS(att,'spa');
+  let ds=mv.cat==='physical'?getStatS(def,'def'):getStatS(def,'spd');
+  if(att.status==='burn'&&mv.cat==='physical')as=Math.floor(as/2);
+  const eff=getEff(mv.type,def.types);
+  const stab=att.types.includes(mv.type)?1.5:1;
+  const critChance=mv.eff==='crit_high'?0.125:0.0625;
+  const crit=Math.random()<critChance;
+  const rndMult=0.85+Math.random()*0.15;
+  const dmg=Math.max(1,Math.floor(((2*att.level/5+2)*mv.power*as/ds/50+2)*stab*eff*(crit?2:1)*rndMult));
+  return{dmg,eff,crit};
+}
+
+function applyEff(att,def,mid){
+  const mv=MOVES[mid];if(!mv||!mv.eff)return null;
+  const e=mv.eff;let msg=null;
+  if(e.startsWith('burn_')){const ch=parseInt(e.split('_')[1])/100;if(!def.status&&Math.random()<ch){def.status='burn';msg=`${def.name} was burned!`;}}
+  else if(e.startsWith('poison_')&&e!=='poison_100'){const ch=parseInt(e.split('_')[1])/100;if(!def.status&&Math.random()<ch){def.status='poison';msg=`${def.name} was poisoned!`;}}
+  else if(e.startsWith('para_')){const ch=parseInt(e.split('_')[1])/100;if(!def.status&&Math.random()<ch){def.status='paralysis';msg=`${def.name} was paralyzed!`;}}
+  else if(e==='poison_100'){if(!def.status){def.status='poison';msg=`${def.name} was poisoned!`;}}
+  else if(e==='sleep_100'){if(!def.status){def.status='sleep';def.statusTurns=2+rnd(4);msg=`${def.name} fell asleep!`;}}
+  else if(e==='freeze_10'){if(!def.status&&Math.random()<0.1){def.status='freeze';msg=`${def.name} was frozen solid!`;}}
+  else if(e==='lower_atk'){def.stages.atk=clamp((def.stages.atk||0)-1,-6,6);msg=`${def.name}'s Attack fell!`;}
+  else if(e==='lower_def'){def.stages.def=clamp((def.stages.def||0)-1,-6,6);msg=`${def.name}'s Defense fell!`;}
+  else if(e==='lower_spd'){def.stages.spe=clamp((def.stages.spe||0)-1,-6,6);msg=`${def.name}'s Speed fell!`;}
+  else if(e==='raise_def'){att.stages.def=clamp((att.stages.def||0)+1,-6,6);msg=`${att.name}'s Defense rose!`;}
+  return msg;
+}
+
+// ---- PREPROCESS MAPS (pad 5 tree cols each side → 30 wide) ----
+const PAD=5;
+let mapsReady=false;
+function preprocessMaps(){
+  if(mapsReady)return;mapsReady=true;
+  for(const key of Object.keys(MAPS)){
+    const map=MAPS[key];
+    map.tiles=map.tiles.map(row=>[...Array(PAD).fill(1),...row,...Array(PAD).fill(1)]);
+    map.w+=PAD*2;map.sx+=PAD;
+    if(map.bldgs){
+      const nb={};
+      for(const[k,v]of Object.entries(map.bldgs)){const[x,y]=k.split(',').map(Number);nb[`${x+PAD},${y}`]=v;}
+      map.bldgs=nb;
+    }
+    if(map.exits){for(const e of Object.values(map.exits)){if(e.ex!==undefined)e.ex+=PAD;}}
+  }
+}
+
+// ---- CANVAS TILE DRAWING ----
+function getTileAt(map,x,y){if(x<0||x>=map.w||y<0||y>=map.h)return 1;return map.tiles[y]?.[x]??1;}
+
+function drawTile(ctx,type,px,py,frame){
+  if(type===0){// path/ground
+    ctx.fillStyle='#d4b862';ctx.fillRect(px,py,TS,TS);
+    ctx.fillStyle='#c4a852';ctx.fillRect(px+2,py+2,2,1);ctx.fillRect(px+10,py+8,2,1);ctx.fillRect(px+5,py+13,3,1);
+    ctx.fillStyle='#b89840';ctx.fillRect(px,py+TS-1,TS,1);ctx.fillRect(px+TS-1,py,1,TS);
+  }else if(type===1){// tree
+    ctx.fillStyle='#0d2a0d';ctx.fillRect(px,py,TS,TS);
+    ctx.fillStyle='#4a2a08';ctx.fillRect(px+5,py+10,6,6);
+    ctx.fillStyle='#1a6a1a';ctx.fillRect(px+1,py+1,14,10);
+    ctx.fillStyle='#2a8a2a';ctx.fillRect(px+2,py+2,12,8);
+    ctx.fillStyle='#3aaa3a';ctx.fillRect(px+3,py+2,5,4);ctx.fillRect(px+2,py+5,2,2);
+    ctx.fillStyle='#0a4a0a';ctx.fillRect(px+10,py+4,5,6);ctx.fillRect(px+8,py+8,6,3);
+  }else if(type===2){// tall grass
+    ctx.fillStyle='#2a7820';ctx.fillRect(px,py,TS,TS);
+    ctx.fillStyle='#1a5a14';ctx.fillRect(px,py+10,TS,6);
+    ctx.fillStyle='#4aaa30';
+    ctx.fillRect(px+1,py+2,2,10);ctx.fillRect(px+5,py+1,2,11);ctx.fillRect(px+9,py+3,2,9);ctx.fillRect(px+13,py+1,2,11);
+    ctx.fillStyle='#5ac840';
+    ctx.fillRect(px+2,py+2,1,6);ctx.fillRect(px+6,py+2,1,5);ctx.fillRect(px+10,py+3,1,5);ctx.fillRect(px+14,py+2,1,6);
+    ctx.fillStyle='#1a4a10';ctx.fillRect(px,py+12,3,2);ctx.fillRect(px+7,py+13,3,2);
+  }else if(type===3){// water
+    const w=frame%2;
+    ctx.fillStyle='#2858c8';ctx.fillRect(px,py,TS,TS);
+    ctx.fillStyle='#3070e0';ctx.fillRect(px,py,TS,8);
+    ctx.fillStyle='#4898f8';
+    if(w===0){ctx.fillRect(px+1,py+3,5,2);ctx.fillRect(px+9,py+9,5,2);}
+    else{ctx.fillRect(px+3,py+4,5,2);ctx.fillRect(px+1,py+11,6,2);}
+    ctx.fillStyle='#a8d8ff';ctx.fillRect(px+2,py+3,2,1);ctx.fillRect(px+10,py+9,2,1);
+  }else{
+    ctx.fillStyle='#c8b870';ctx.fillRect(px,py,TS,TS);
+  }
+}
+
+function drawBuilding(ctx,type,px,py){
+  if(type===4){// PC — red roof, white body, red cross
+    ctx.fillStyle='#e0e0d0';ctx.fillRect(px,py+8,32,24);
+    ctx.fillStyle='#b01818';ctx.fillRect(px,py,32,9);
+    ctx.fillStyle='#d02020';ctx.fillRect(px+2,py+1,28,6);
+    ctx.fillStyle='#880808';ctx.fillRect(px,py+8,32,2);
+    ctx.fillStyle='#f8e830';ctx.fillRect(px+7,py+9,18,5);
+    ctx.fillStyle='#b01818';ctx.fillRect(px+13,py+10,6,3);ctx.fillRect(px+15,py+8,2,7);
+    ctx.fillStyle='#88c8f8';ctx.fillRect(px+4,py+15,9,6);ctx.fillRect(px+19,py+15,9,6);
+    ctx.fillStyle='#c0e8ff';ctx.fillRect(px+4,py+15,5,3);ctx.fillRect(px+19,py+15,5,3);
+    ctx.fillStyle='#3060a0';ctx.fillRect(px+9,py+15,1,6);ctx.fillRect(px+24,py+15,1,6);ctx.fillRect(px+4,py+18,9,1);ctx.fillRect(px+19,py+18,9,1);
+    ctx.fillStyle='#8090c8';ctx.fillRect(px+11,py+22,10,10);
+    ctx.fillStyle='#a0b0e0';ctx.fillRect(px+12,py+23,4,9);ctx.fillRect(px+17,py+23,3,9);
+    ctx.fillStyle='#c8b870';ctx.fillRect(px+9,py+31,14,1);
+  }else if(type===5){// Mart — blue roof, gold sign
+    ctx.fillStyle='#e8e8d8';ctx.fillRect(px,py+8,32,24);
+    ctx.fillStyle='#1820a0';ctx.fillRect(px,py,32,9);
+    ctx.fillStyle='#2030c0';ctx.fillRect(px+2,py+1,28,6);
+    ctx.fillStyle='#0810a0';ctx.fillRect(px,py+8,32,2);
+    ctx.fillStyle='#f8d020';ctx.fillRect(px+3,py+9,26,6);
+    ctx.fillStyle='#1820a0';
+    ctx.fillRect(px+7,py+10,2,4);ctx.fillRect(px+13,py+10,2,4);
+    ctx.fillRect(px+9,py+10,2,2);ctx.fillRect(px+11,py+10,2,2);ctx.fillRect(px+9,py+12,4,2);
+    ctx.fillStyle='#88c8f8';ctx.fillRect(px+3,py+16,10,6);ctx.fillRect(px+19,py+16,10,6);
+    ctx.fillStyle='#c0e8ff';ctx.fillRect(px+3,py+16,5,3);ctx.fillRect(px+19,py+16,5,3);
+    ctx.fillStyle='#3060a0';ctx.fillRect(px+9,py+16,1,6);ctx.fillRect(px+25,py+16,1,6);
+    ctx.fillStyle='#404090';ctx.fillRect(px+10,py+22,12,10);
+    ctx.fillStyle='#5050b0';ctx.fillRect(px+11,py+23,4,9);ctx.fillRect(px+17,py+23,4,9);
+    ctx.fillStyle='#c8b870';ctx.fillRect(px+9,py+31,14,1);
+  }else if(type===6){// Gym — stone, sword emblem
+    ctx.fillStyle='#9a9070';ctx.fillRect(px,py,32,32);
+    ctx.fillStyle='#b0a880';ctx.fillRect(px+1,py+1,30,6);ctx.fillRect(px+1,py+8,13,4);ctx.fillRect(px+18,py+8,13,4);
+    ctx.fillStyle='#6a6040';ctx.fillRect(px,py,1,32);ctx.fillRect(px+31,py,1,32);
+    for(let i=0;i<4;i++){ctx.fillRect(px+i*8,py,7,1);ctx.fillRect(px,py+i*8,1,7);}
+    ctx.fillStyle='#c8c0a0';ctx.fillRect(px+1,py+8,6,20);ctx.fillRect(px+25,py+8,6,20);
+    ctx.fillStyle='#f8c000';ctx.fillRect(px+14,py+2,4,18);ctx.fillRect(px+9,py+16,14,3);
+    ctx.fillStyle='#f0a000';ctx.fillRect(px+14,py+19,4,5);
+    ctx.fillStyle='#c08000';ctx.fillRect(px+15,py+20,2,4);
+    ctx.fillStyle='#101008';ctx.fillRect(px+9,py+22,14,10);
+    ctx.fillStyle='#9a9070';ctx.fillRect(px+9,py+22,3,3);ctx.fillRect(px+20,py+22,3,3);
+    ctx.fillStyle='#c8b870';ctx.fillRect(px+9,py+31,14,1);
+  }else if(type===7){// House — brown roof, beige walls
+    ctx.fillStyle='#e8d898';ctx.fillRect(px,py+12,32,20);
+    ctx.fillStyle='#802808';ctx.fillRect(px,py+8,32,6);ctx.fillRect(px+2,py+6,28,4);ctx.fillRect(px+5,py+4,22,4);ctx.fillRect(px+8,py+2,16,4);ctx.fillRect(px+11,py,10,4);
+    ctx.fillStyle='#a04020';ctx.fillRect(px+12,py+1,8,2);ctx.fillRect(px+6,py+3,20,1);
+    ctx.fillStyle='#602008';ctx.fillRect(px,py+13,32,1);
+    ctx.fillStyle='#88c8f8';ctx.fillRect(px+3,py+15,9,6);ctx.fillRect(px+20,py+15,9,6);
+    ctx.fillStyle='#c0e8ff';ctx.fillRect(px+3,py+15,5,3);ctx.fillRect(px+20,py+15,5,3);
+    ctx.fillStyle='#804820';ctx.fillRect(px+8,py+15,1,6);ctx.fillRect(px+3,py+18,9,1);
+    ctx.fillStyle='#804820';ctx.fillRect(px+25,py+15,1,6);ctx.fillRect(px+20,py+18,9,1);
+    ctx.fillStyle='#5a3010';ctx.fillRect(px+11,py+21,10,11);
+    ctx.fillStyle='#7a4820';ctx.fillRect(px+12,py+22,4,10);ctx.fillRect(px+17,py+22,3,10);
+    ctx.fillStyle='#f0c020';ctx.fillRect(px+20,py+26,1,1);
+    ctx.fillStyle='#802808';ctx.fillRect(px+22,py-1,6,7);
+    ctx.fillStyle='#555555';ctx.fillRect(px+23,py,4,4);
+    ctx.fillStyle='#c8b870';ctx.fillRect(px+10,py+31,12,1);
+  }else if(type===8){// Lab — purple roof, big windows, flask
+    ctx.fillStyle='#ece8f8';ctx.fillRect(px,py+8,32,24);
+    ctx.fillStyle='#5010a0';ctx.fillRect(px,py,32,9);
+    ctx.fillStyle='#7030c0';ctx.fillRect(px+2,py+1,28,6);
+    ctx.fillStyle='#300880';ctx.fillRect(px,py+8,32,2);
+    ctx.fillStyle='#88c8f8';ctx.fillRect(px+3,py+10,11,9);ctx.fillRect(px+18,py+10,11,9);
+    ctx.fillStyle='#c0e8ff';ctx.fillRect(px+3,py+10,6,5);ctx.fillRect(px+18,py+10,6,5);
+    ctx.fillStyle='#4040a0';ctx.fillRect(px+9,py+10,1,9);ctx.fillRect(px+3,py+15,11,1);
+    ctx.fillStyle='#4040a0';ctx.fillRect(px+24,py+10,1,9);ctx.fillRect(px+18,py+15,11,1);
+    ctx.fillStyle='#4040a0';ctx.fillRect(px+13,py+12,6,2);ctx.fillRect(px+14,py+14,4,5);ctx.fillRect(px+11,py+18,10,4);
+    ctx.fillStyle='#30d060';ctx.fillRect(px+12,py+19,8,3);
+    ctx.fillStyle='#80f0a0';ctx.fillRect(px+12,py+19,3,1);
+    ctx.fillStyle='#300880';ctx.fillRect(px+10,py+22,12,10);
+    ctx.fillStyle='#5020b0';ctx.fillRect(px+11,py+23,4,9);ctx.fillRect(px+17,py+23,4,9);
+    ctx.fillStyle='#f0c020';ctx.fillRect(px+20,py+27,1,1);
+    ctx.fillStyle='#c8b870';ctx.fillRect(px+9,py+31,14,1);
+  }
+}
+
+function drawPlayer(ctx,px,py,dir,step){
+  const s=Math.floor(step/3)%2;
+  const bob=s?1:0;
+  ctx.fillStyle='rgba(0,0,0,0.2)';ctx.fillRect(px+3,py+14,10,3);
+  // hat
+  ctx.fillStyle='#3060c0';ctx.fillRect(px+3,py+bob,10,3);
+  ctx.fillStyle='#2040a0';ctx.fillRect(px+2,py+3+bob,12,1);
+  ctx.fillStyle='#1a2e80';ctx.fillRect(px+8,py+bob,3,2);
+  // head
+  ctx.fillStyle='#f0c880';ctx.fillRect(px+4,py+4+bob,8,5);
+  // eyes / direction
+  if(dir==='up'){
+    ctx.fillStyle='#3a1a08';ctx.fillRect(px+4,py+4+bob,8,2);
+  }else if(dir==='right'){
+    ctx.fillStyle='#282828';ctx.fillRect(px+10,py+5+bob,2,2);
+    ctx.fillStyle='#f8f8f8';ctx.fillRect(px+10,py+5+bob,1,1);
+    ctx.fillStyle='#d08060';ctx.fillRect(px+5,py+7+bob,3,1);
+  }else if(dir==='left'){
+    ctx.fillStyle='#282828';ctx.fillRect(px+4,py+5+bob,2,2);
+    ctx.fillStyle='#f8f8f8';ctx.fillRect(px+5,py+5+bob,1,1);
+    ctx.fillStyle='#d08060';ctx.fillRect(px+8,py+7+bob,3,1);
+  }else{// down
+    ctx.fillStyle='#282828';ctx.fillRect(px+5,py+5+bob,2,2);ctx.fillRect(px+9,py+5+bob,2,2);
+    ctx.fillStyle='#f8f8f8';ctx.fillRect(px+5,py+5+bob,1,1);ctx.fillRect(px+9,py+5+bob,1,1);
+    ctx.fillStyle='#d09070';ctx.fillRect(px+6,py+7+bob,4,1);
+  }
+  // body
+  ctx.fillStyle='#c01818';ctx.fillRect(px+3,py+9+bob,10,5);
+  ctx.fillStyle='#e02828';ctx.fillRect(px+4,py+10+bob,8,3);
+  // stripe
+  ctx.fillStyle='#f8f8f8';ctx.fillRect(px+5,py+11+bob,6,1);
+  // arms
+  if(s===1){
+    ctx.fillStyle='#c01818';ctx.fillRect(px+1,py+9+bob,2,4);ctx.fillRect(px+13,py+10+bob,2,4);
+    ctx.fillStyle='#f0c880';ctx.fillRect(px+1,py+12+bob,2,2);ctx.fillRect(px+13,py+13+bob,2,2);
+  }else{
+    ctx.fillStyle='#c01818';ctx.fillRect(px+1,py+10+bob,2,4);ctx.fillRect(px+13,py+9+bob,2,4);
+    ctx.fillStyle='#f0c880';ctx.fillRect(px+1,py+13+bob,2,2);ctx.fillRect(px+13,py+12+bob,2,2);
+  }
+  // legs
+  ctx.fillStyle='#2a48a0';
+  if(s===1){ctx.fillRect(px+4,py+13,3,3);ctx.fillRect(px+9,py+12,3,3);}
+  else{ctx.fillRect(px+4,py+12,3,3);ctx.fillRect(px+9,py+13,3,3);}
+  // shoes
+  ctx.fillStyle='#202020';
+  if(s===1){ctx.fillRect(px+3,py+15,4,1);ctx.fillRect(px+9,py+14,4,1);}
+  else{ctx.fillRect(px+3,py+14,4,1);ctx.fillRect(px+9,py+15,4,1);}
+}
+
+function drawMap(){
+  const canvas=document.getElementById('ow-canvas');if(!canvas)return;
+  const ctx=canvas.getContext('2d');
+  const p=GS.player,map=MAPS[p.area];if(!map)return;
+  const camX=clamp(p.pos.x-Math.floor(VW/2),0,Math.max(0,map.w-VW));
+  const camY=clamp(p.pos.y-Math.floor(VH/2),0,Math.max(0,map.h-VH));
+  ctx.clearRect(0,0,CANVAS_W,CANVAS_H);
+  // Pass 1: ground tiles
+  for(let y=0;y<VH;y++){
+    for(let x=0;x<VW;x++){
+      const t=getTileAt(map,x+camX,y+camY);
+      if(t>=4&&t<=8){ctx.fillStyle='#c8b870';ctx.fillRect(x*TS,y*TS,TS,TS);}
+      else drawTile(ctx,t,x*TS,y*TS,animFrame);
+    }
+  }
+  // Pass 2: buildings (draw 32×32 sprite at top-left of 2×2 cluster)
+  for(let y=0;y<VH;y++){
+    for(let x=0;x<VW;x++){
+      const t=getTileAt(map,x+camX,y+camY);
+      if(t>=4&&t<=8){
+        const tU=getTileAt(map,x+camX,y+camY-1);
+        const tL=getTileAt(map,x+camX-1,y+camY);
+        if(tU!==t&&tL!==t)drawBuilding(ctx,t,x*TS,y*TS);
+      }
+    }
+  }
+  // Pass 3: player
+  const sx=(p.pos.x-camX)*TS,sy=(p.pos.y-camY)*TS;
+  drawPlayer(ctx,sx,sy,p.dir||'down',playerStep);
+}
+
+// ---- BATTLE LOGIC ----
+function startWildBattle(id,lv){
+  const wild=createPoke(id,lv,true);
+  const pp=GS.player.team.find(p=>p.hp>0);
+  if(!pp){notify('No conscious Pokémon!');return;}
+  GS.battle={player:pp,wild,turn:'choose',log:[`A wild ${wild.name} appeared!`],isTrainer:false,trIdx:0,showMoves:false,showBag:false};
+  GS.scene='battle';GS.battleAnimating=false;render();
+}
+
+function startTrainerBattle(trData){
+  const pp=GS.player.team.find(p=>p.hp>0);if(!pp)return;
+  const tp=createPoke(trData.team[0].id,trData.team[0].lv);
+  GS.battle={player:pp,wild:tp,turn:'choose',
+    log:[`${trData.name} wants to battle!`,`Go! ${tp.name}!`],
+    isTrainer:true,trainer:trData,trIdx:1,showMoves:false,showBag:false};
+  GS.scene='battle';GS.battleAnimating=false;render();
+}
+
+function doTurn(playerMoveId){
+  const b=GS.battle;
+  if(b.turn!=='choose'||GS.battleAnimating)return;
+  const mv=MOVES[playerMoveId];if(!mv)return;
+  if((b.player.pp[playerMoveId]||0)<=0){showBattleMsgs(['No PP left for that move!'],()=>{});return;}
+  b.player.pp[playerMoveId]--;
+  b.turn='animating';GS.battleAnimating=true;
+  const msgs=[];
+  const pSpd=getStatS(b.player,'spe')*(b.player.status==='paralysis'?0.5:1);
+  const wSpd=getStatS(b.wild,'spe')*(b.wild.status==='paralysis'?0.5:1);
+  const pFirst=pSpd>wSpd||(pSpd===wSpd&&Math.random()<0.5);
+  const wMid=b.wild.moves.length>0?b.wild.moves[rnd(b.wild.moves.length)]:'tackle';
+
+  function doAtk(att,def,mid){
+    const mv2=MOVES[mid]||MOVES['tackle'];
+    if(att.status==='sleep'){att.statusTurns--;if(att.statusTurns<=0){att.status=null;msgs.push(`${att.name} woke up!`);}else{msgs.push(`${att.name} is fast asleep!`);return;}}
+    if(att.status==='paralysis'&&Math.random()<0.25){msgs.push(`${att.name} is paralyzed and can't move!`);return;}
+    if(att.status==='freeze'){if(Math.random()<0.2){att.status=null;msgs.push(`${att.name} thawed out!`);}else{msgs.push(`${att.name} is frozen solid!`);return;}}
+    msgs.push(`${att.name} used ${mv2.name}!`);
+    if(mv2.power>0){
+      if(Math.random()>(mv2.acc||100)/100){msgs.push(`${att.name}'s attack missed!`);return;}
+      if(mv2.eff==='level_dmg'){const dmg=att.level;def.hp=Math.max(0,def.hp-dmg);msgs.push(`It dealt ${dmg} damage!`);}
+      else{
+        const{dmg,eff,crit}=calcDmg(att,def,mid);
+        const heal=mv2.eff==='drain'?Math.floor(dmg/2):0;
+        def.hp=Math.max(0,def.hp-dmg);
+        if(crit)msgs.push('A critical hit!');
+        if(eff>=2)msgs.push("It's super effective!");
+        else if(eff>0&&eff<1)msgs.push("It's not very effective...");
+        else if(eff===0)msgs.push(`It doesn't affect ${def.name}!`);
+        if(heal>0){att.hp=Math.min(att.maxHp,att.hp+heal);msgs.push(`${att.name} restored some HP!`);}
+      }
+      if(def.hp>0){const em=applyEff(att,def,mid);if(em)msgs.push(em);}
+    }else{const em=applyEff(att,def,mid);if(em)msgs.push(em);else msgs.push('But nothing happened...');}
+    if(att.hp>0&&(att.status==='burn'||att.status==='poison')){const dot=Math.max(1,Math.floor(att.maxHp/8));att.hp=Math.max(0,att.hp-dot);msgs.push(`${att.name} is hurt by its ${att.status}!`);}
+  }
+
+  if(pFirst){doAtk(b.player,b.wild,playerMoveId);if(b.wild.hp>0&&b.player.hp>0)doAtk(b.wild,b.player,wMid);}
+  else{doAtk(b.wild,b.player,wMid);if(b.player.hp>0&&b.wild.hp>0)doAtk(b.player,b.wild,playerMoveId);}
+
+  if(b.wild.hp<=0){
+    msgs.push(`${b.wild.name} fainted!`);
+    const exp=calcExp(b.wild);b.player.exp+=exp;msgs.push(`${b.player.name} gained ${exp} EXP!`);
+    const lvMsgs=[];while(b.player.level<100&&b.player.exp>=b.player.expNext)doLevelUp(b.player,lvMsgs);msgs.push(...lvMsgs);
+    if(b.isTrainer&&b.trainer&&b.trIdx<b.trainer.team.length){
+      const next=b.trainer.team[b.trIdx++];const np=createPoke(next.id,next.lv);
+      msgs.push(`${b.trainer.name} sent out ${np.name}!`);b.wild=np;
+      showBattleMsgs(msgs,()=>{b.turn='choose';GS.battleAnimating=false;render();});
+    }else{
+      if(b.isTrainer){
+        msgs.push(`${b.trainer?.name||'Trainer'} was defeated!`);
+        if(b.trainer?.badge&&!GS.player.badges.includes(b.trainer.badge)){GS.player.badges.push(b.trainer.badge);msgs.push(`You got the ${b.trainer.badge}!`);}
+        const reward=b.trainer?.reward||500;GS.player.money+=reward;msgs.push(`You got ₽${reward}!`);
+      }
+      b.turn='end_win';showBattleMsgs(msgs,()=>{render();setTimeout(endBattle,1200);});
+    }
+  }else if(b.player.hp<=0){
+    msgs.push(`${b.player.name} fainted!`);
+    const next=GS.player.team.find(p=>p!==b.player&&p.hp>0);
+    if(next){msgs.push(`Go, ${next.name}!`);b.player=next;showBattleMsgs(msgs,()=>{b.turn='choose';GS.battleAnimating=false;render();});}
+    else{msgs.push('All your Pokémon fainted! Blacked out...');b.turn='end_lose';showBattleMsgs(msgs,()=>{render();setTimeout(endBattle,1200);});}
+  }else{b.turn='choose';showBattleMsgs(msgs,()=>{GS.battleAnimating=false;render();});}
+}
+
+function showBattleMsgs(msgs,done){
+  let i=0;
+  function next(){if(i>=msgs.length){if(done)done();return;}GS.battle.log=msgs.slice(Math.max(0,i-2),i+1);renderBattle();i++;setTimeout(next,800);}
+  next();
+}
+function calcExp(foe){return Math.floor((PKDATA[foe.id].ey||50)*foe.level/7);}
+
+function doLevelUp(p,msgs){
+  p.level++;const oldMaxHp=p.maxHp;calcStats(p);p.hp=Math.min(p.maxHp,p.hp+(p.maxHp-oldMaxHp));
+  p.expNext=expForLevel(p.level+1,PKDATA[p.id].eg||'medium_slow');
+  msgs.push(`${p.name} grew to Lv.${p.level}!`);
+  const base=PKDATA[p.id],curLs=base.ls||{};
+  for(const[lstr,ms]of Object.entries(curLs)){
+    if(parseInt(lstr)===p.level){for(const m of ms){if(!p.moves.includes(m)&&MOVES[m]&&p.moves.length<4){p.moves.push(m);p.pp[m]=MOVES[m].pp;msgs.push(`${p.name} learned ${MOVES[m].name}!`);}}}
+  }
+  if(base.eAt&&p.level>=base.eAt&&base.eTo&&PKDATA[base.eTo]){
+    const oldName=p.name;p.id=base.eTo;const nb=PKDATA[base.eTo];
+    p.name=nb.name;p.types=[...nb.types];calcStats(p);p.hp=Math.min(p.maxHp,p.hp+30);
+    p.expNext=expForLevel(p.level+1,nb.eg||'medium_slow');
+    msgs.push(`Congratulations! ${oldName} evolved into ${p.name}!`);
+  }
+}
+
+function tryRun(){
+  const b=GS.battle;
+  if(b.isTrainer){showBattleMsgs(["Can't flee from a Trainer battle!"],()=>{});return;}
+  if(GS.battleAnimating)return;GS.battleAnimating=true;
+  const pSpd=b.player.spe,wSpd=b.wild.spe;
+  const odds=((pSpd*128/Math.max(1,wSpd))+30)%256;
+  if(Math.random()*256<odds){showBattleMsgs(['Got away safely!'],()=>{GS.battleAnimating=false;endBattle();});}
+  else{
+    const wm=b.wild.moves[rnd(b.wild.moves.length)]||'tackle';
+    const{dmg}=calcDmg(b.wild,b.player,wm);b.player.hp=Math.max(0,b.player.hp-dmg);
+    const msgs=["Can't escape!",`${b.wild.name} used ${MOVES[wm]?.name||'Tackle'}!`];
+    if(b.player.hp<=0){b.turn='end_lose';showBattleMsgs(msgs,()=>{GS.battleAnimating=false;render();setTimeout(endBattle,1200);});}
+    else showBattleMsgs(msgs,()=>{GS.battleAnimating=false;render();});
+  }
+}
+
+function tryCatch(ballType){
+  const b=GS.battle;
+  if(b.isTrainer){showBattleMsgs(["Can't catch a Trainer's Pokémon!"],()=>{});return;}
+  if(GS.battleAnimating)return;
+  if(!GS.player.bag[ballType]||GS.player.bag[ballType]<=0){showBattleMsgs(['No balls of that type!'],()=>{});return;}
+  if(GS.player.team.length>=6){showBattleMsgs(['Your party is full!'],()=>{});return;}
+  GS.battleAnimating=true;GS.player.bag[ballType]--;
+  const item=ITEMS[ballType];
+  const cr=PKDATA[b.wild.id].cr||45;
+  const hpF=(3*b.wild.maxHp-2*b.wild.hp)/(3*b.wild.maxHp);
+  const sb=b.wild.status==='sleep'||b.wild.status==='freeze'?2:b.wild.status?1.5:1;
+  const cv=cr*hpF*(item.cm||1)*sb;
+  const caught=Math.random()*255<cv;
+  const msgs=[`You threw a ${item.name}!`];
+  if(caught){
+    msgs.push(`${b.wild.name} was caught!`,'Added to your party!');
+    b.wild.isWild=false;GS.player.team.push(b.wild);b.turn='end_catch';
+    showBattleMsgs(msgs,()=>{GS.battleAnimating=false;render();setTimeout(endBattle,1500);});
+  }else{
+    const shakes=cv>192?3:cv>128?2:cv>64?1:0;
+    msgs.push(`...${['It escaped!','It broke free!','So close!','Almost!'][shakes]}`);
+    const wm=b.wild.moves.length>0?b.wild.moves[rnd(b.wild.moves.length)]:'tackle';
+    if(b.player.hp>0){const{dmg}=calcDmg(b.wild,b.player,wm);b.player.hp=Math.max(0,b.player.hp-dmg);msgs.push(`${b.wild.name} used ${MOVES[wm]?.name||'Tackle'}!`);if(b.player.hp<=0)b.turn='end_lose';}
+    showBattleMsgs(msgs,()=>{GS.battleAnimating=false;render();});
+  }
+}
+
+function useBagItemInBattle(itemKey){
+  const b=GS.battle;if(GS.battleAnimating)return;
+  const item=ITEMS[itemKey];
+  if(!item||!GS.player.bag[itemKey]||GS.player.bag[itemKey]<=0){showBattleMsgs(['No items left!'],()=>{});return;}
+  if(item.t==='ball'){tryCatch(itemKey);return;}
+  const p=b.player;GS.player.bag[itemKey]--;
+  let msg=`Used ${item.name} on ${p.name}!`;
+  if(item.t==='heal'){const heal=Math.min(item.heal===999?p.maxHp:item.heal,p.maxHp-p.hp);p.hp=Math.min(p.maxHp,p.hp+(item.heal===999?p.maxHp:item.heal));msg+=` Restored ${heal} HP.`;}
+  else if(item.t==='status'){if(item.cures==='all')p.status=null;else if(p.status===item.cures)p.status=null;else msg=`It had no effect!`;}
+  GS.battleAnimating=true;
+  const wm=b.wild.moves.length>0?b.wild.moves[rnd(b.wild.moves.length)]:'tackle';
+  const{dmg}=calcDmg(b.wild,p,wm);p.hp=Math.max(0,p.hp-dmg);
+  const msgs=[msg,`${b.wild.name} used ${MOVES[wm]?.name||'Tackle'}!`];
+  if(p.hp<=0)b.turn='end_lose';
+  showBattleMsgs(msgs,()=>{GS.battleAnimating=false;render();});
+}
+
+function endBattle(){
+  const b=GS.battle;if(!b)return;
+  if(b.turn==='end_lose'){
+    for(const p of GS.player.team){if(p.hp<=0)p.hp=Math.floor(p.maxHp/4);p.status=null;}
+    GS.player.money=Math.max(0,Math.floor(GS.player.money*0.85));
+    GS.battle=null;GS.scene='gameover';render();return;
+  }
+  GS.battle=null;GS.battleAnimating=false;GS.scene='overworld';render();
+}
+
+// ---- OVERWORLD LOGIC ----
+function movePlayer(dx,dy){
+  const p=GS.player;const map=MAPS[p.area];if(!map)return;
+  const nx=p.pos.x+dx,ny=p.pos.y+dy;
+  if(dx>0)p.dir='right';else if(dx<0)p.dir='left';else if(dy>0)p.dir='down';else if(dy<0)p.dir='up';
+  const exits=map.exits||{};
+  if(ny<0&&exits.north){const e=exits.north;p.area=e.target;p.pos={x:e.ex,y:MAPS[e.target].h-2};render();return;}
+  if(ny>=map.h&&exits.south){const e=exits.south;p.area=e.target;p.pos={x:e.ex,y:1};render();return;}
+  if(nx<0&&exits.west){const e=exits.west;p.area=e.target;p.pos={x:MAPS[e.target].w-2,y:e.ey};render();return;}
+  if(nx>=map.w&&exits.east){const e=exits.east;p.area=e.target;p.pos={x:1,y:e.ey};render();return;}
+  if(nx<0||nx>=map.w||ny<0||ny>=map.h)return;
+  const tile=map.tiles[ny]?.[nx];
+  if(tile===undefined||tile===1)return;
+  if(tile>=4&&tile<=8){
+    const key=`${nx},${ny}`;
+    if(map.bldgs&&map.bldgs[key]){handleBuilding(map.bldgs[key]);return;}
+    return;// blocked by building tile with no entry
+  }
+  p.pos={x:nx,y:ny};p.steps++;playerStep++;
+  if(tile===2&&map.enc&&Math.random()<1/Math.max(1,map.enc.steps)){triggerEncounter(map.enc);return;}
+  drawMap();
+}
+
+function triggerEncounter(enc){
+  const total=enc.pokes.reduce((s,e)=>s+e.r,0);
+  let roll=Math.random()*total,chosen=enc.pokes[0];
+  for(const e of enc.pokes){roll-=e.r;if(roll<=0){chosen=e;break;}}
+  const lv=chosen.mn+rnd(chosen.mx-chosen.mn+1);
+  const name=PKDATA[chosen.id]?.name||'Pokémon';
+  GS.prevScene='overworld';GS.dialog={msg:`A wild ${name} appeared!`,cb:null};
+  GS.scene='dialog';render();
+  setTimeout(()=>{GS.scene='overworld';startWildBattle(chosen.id,lv);},800);
+}
+
+function handleBuilding(bldg){
+  if(bldg.t==='PC'){
+    for(const p of GS.player.team){p.hp=p.maxHp;p.status=null;for(const m of p.moves)p.pp[m]=MOVES[m].pp;}
+    GS.prevScene='overworld';GS.dialog={msg:'Welcome to the Pokémon Center!\nYour Pokémon are fully restored!',cb:null};
+    GS.scene='dialog';render();setTimeout(()=>{GS.scene='overworld';render();},1800);
+  }else if(bldg.t==='LAB'){
+    if(GS.player.team.length===0){GS.scene='starter';render();}
+    else{GS.prevScene='overworld';GS.dialog={msg:"Prof. Oak: Your Pokédex is growing! Keep exploring the world!",cb:null};GS.scene='dialog';render();setTimeout(()=>{GS.scene='overworld';render();},1800);}
+  }else if(bldg.t==='MART'){GS.shopArea=GS.player.area;GS.scene='shop';render();}
+  else if(bldg.t==='GYM'){
+    if(!bldg.badge)return;
+    if(GS.player.badges.includes(bldg.badge)){
+      GS.prevScene='overworld';GS.dialog={msg:`You already have the ${bldg.badge}! Come back anytime!`,cb:null};
+      GS.scene='dialog';render();setTimeout(()=>{GS.scene='overworld';render();},1600);
+    }else if(GS.player.team.length===0){
+      GS.prevScene='overworld';GS.dialog={msg:"You need Pokémon to challenge the Gym!",cb:null};
+      GS.scene='dialog';render();setTimeout(()=>{GS.scene='overworld';render();},1400);
+    }else{
+      const leader=bldg.leader;
+      GS.prevScene='overworld';GS.dialog={msg:`${leader?.name||'Gym Leader'}: So, you dare challenge me? Prepare yourself!`,cb:null};
+      GS.scene='dialog';render();
+      setTimeout(()=>{GS.scene='overworld';if(leader)startTrainerBattle({...leader,badge:bldg.badge,reward:leader.reward||1500});},1600);
+    }
+  }else if(bldg.t==='HOUSE'){
+    const msgs=["It's a cozy home. Someone's been brewing tea!","The fireplace crackles warmly inside.","Shelves line the walls with Pokémon books."];
+    GS.prevScene='overworld';GS.dialog={msg:msgs[rnd(msgs.length)],cb:null};
+    GS.scene='dialog';render();setTimeout(()=>{GS.scene='overworld';render();},1500);
+  }
+}
+
+// ---- INIT ----
+function initPlayer(name){
+  return{name,pos:{x:MAPS.pallet.sx,y:MAPS.pallet.sy},area:'pallet',
+    team:[],pc:[],bag:{pokeball:5,potion:3},money:3000,badges:[],steps:0,dir:'down'};
+}
+
+// ---- RENDER ----
+const screen=document.getElementById('screen');
+
+function render(){
+  switch(GS.scene){
+    case'title':     renderTitle();break;
+    case'name':      renderName();break;
+    case'starter':   renderStarter();break;
+    case'tutorial':  renderTutorial();break;
+    case'overworld': renderOverworld();break;
+    case'battle':    renderBattle();break;
+    case'menu':      renderMenu();break;
+    case'pokemenu':  renderPokeMenu();break;
+    case'detail':    renderDetail();break;
+    case'bag':       renderBag();break;
+    case'shop':      renderShop();break;
+    case'dialog':    renderDialogScene();break;
+    case'gameover':  renderGameOver();break;
+  }
+}
+
+// ---- TITLE ----
+function renderTitle(){
+  screen.innerHTML=`<div id="title-screen" class="screen-fill fade-in">
+    <div class="title-stars">${Array.from({length:35},(_,i)=>`<div class="star" style="left:${rnd(100)}%;top:${rnd(100)}%;animation-delay:${(i*0.15).toFixed(2)}s;animation-duration:${(1.5+Math.random()*2).toFixed(1)}s"></div>`).join('')}</div>
+    <div class="title-logo">PokéJourney</div>
+    <div class="title-sub">A NEW ADVENTURE AWAITS</div>
+    <div class="title-pokemon-row">
+      <img src="${spriteUrl(1)}" alt="Bulbasaur">
+      <img src="${spriteUrl(4)}" alt="Charmander">
+      <img src="${spriteUrl(7)}" alt="Squirtle">
+    </div>
+    <div class="press-start">PRESS A / ENTER TO START</div>
+    <div class="title-version">v2.0 © PokéJourney</div>
+  </div>`;
+  // Load button to continue saved game
+  try{
+    const sv=localStorage.getItem('pokejsave');
+    if(sv){
+      const cont=document.createElement('div');
+      cont.style.cssText='position:absolute;bottom:18px;left:50%;transform:translateX(-50%);font-size:8px;color:#8898c8;cursor:pointer;animation:blink 2s step-end infinite;';
+      cont.textContent='HOLD B TO LOAD SAVE';
+      screen.querySelector('#title-screen').appendChild(cont);
+    }
+  }catch(e){}
+}
+
+// ---- NAME ----
+function renderName(){
+  const keys='ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+  screen.innerHTML=`<div id="name-screen" class="screen-fill fade-in">
+    <div class="name-title">WHAT IS YOUR NAME?</div>
+    <div class="name-box"><div class="name-input-display">${GS.nameInput||'_'}</div></div>
+    <div class="keyboard">
+      ${keys.map(k=>`<div class="key-btn" data-key="${k}">${k}</div>`).join('')}
+      <div class="key-btn special" data-key="DEL">◀DEL</div>
+      <div class="key-btn special" data-key="OK" style="background:linear-gradient(180deg,#90e090,#60c060);color:#1a3a1a;">OK✓</div>
+    </div>
+    <div class="starter-hint" style="margin-top:4px">Up to 10 characters</div>
+  </div>`;
+  screen.querySelectorAll('.key-btn').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const k=btn.dataset.key;
+      if(k==='DEL')GS.nameInput=GS.nameInput.slice(0,-1);
+      else if(k==='OK'){if(GS.nameInput.trim().length>0){GS.player=initPlayer(GS.nameInput.trim());GS.scene='starter';render();}}
+      else if(GS.nameInput.length<10)GS.nameInput+=k;
+      if(GS.scene==='name')render();
+    });
+  });
+}
+
+// ---- STARTER ----
+function renderStarter(){
+  const starters=[{id:1,desc:'Grass/Poison · Balanced'},{id:4,desc:'Fire · Fast & Powerful'},{id:7,desc:'Water · Defensive & Steady'}];
+  screen.innerHTML=`<div id="starter-screen" class="screen-fill fade-in">
+    <div class="starter-title">Prof. Oak: Welcome, ${GS.player?.name||'Trainer'}!<br>Choose your first Pokémon!</div>
+    <div class="starter-row">
+      ${starters.map(s=>`<div class="starter-card" data-id="${s.id}">
+        <img src="${spriteUrl(s.id)}" alt="${PKDATA[s.id].name}">
+        <div class="starter-name">${PKDATA[s.id].name}</div>
+        <div class="starter-types">${PKDATA[s.id].types.map(t=>`<span class="type-badge" style="background:${typeColors[t]}">${t}</span>`).join('')}</div>
+        <div style="font-size:7px;color:#386038;margin-top:4px;line-height:1.8">${s.desc}</div>
+      </div>`).join('')}
+    </div>
+    <div class="starter-hint">Click a Pokémon to choose!</div>
+  </div>`;
+  screen.querySelectorAll('.starter-card').forEach(card=>{
+    card.addEventListener('click',()=>{
+      const id=parseInt(card.dataset.id);
+      const poke=createPoke(id,5);GS.player.team.push(poke);
+      GS.prevScene='starter';GS.dialog={msg:`You chose ${poke.name}! Take good care of it! Your journey begins!`,cb:null};
+      GS.scene='dialog';render();
+      setTimeout(()=>{GS.scene='tutorial';render();},2000);
+    });
+  });
+}
+
+// ---- TUTORIAL ----
+function renderTutorial(){
+  const poke=GS.player?.team[0];
+  screen.innerHTML=`<div style="background:linear-gradient(180deg,#0a1a0a,#061006);width:100%;height:100%;position:absolute;top:0;left:0;overflow-y:auto;" class="fade-in">
+    <div style="background:linear-gradient(135deg,#1a5a1a,#0e3a0e);padding:8px 12px;border-bottom:3px solid #3a8a3a;display:flex;justify-content:space-between;align-items:center;">
+      <span style="font-size:11px;color:#90f090;">HOW TO PLAY</span>
+      ${poke?`<img src="${spriteUrl(poke.id)}" style="width:32px;height:32px;">`:``}
+    </div>
+    <div style="padding:8px;display:flex;flex-direction:column;gap:6px;">
+      <div style="background:#0a1e0a;border:2px solid #2a5a2a;border-radius:3px;padding:8px;">
+        <div style="font-size:9px;color:#60d860;margin-bottom:5px;">🎮 CONTROLS</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:2px;">
+          <div style="font-size:7px;color:#a0d8a0;line-height:2;">Arrow keys / WASD · Move</div>
+          <div style="font-size:7px;color:#a0d8a0;line-height:2;">A or Enter · Confirm / Talk</div>
+          <div style="font-size:7px;color:#a0d8a0;line-height:2;">B or Escape · Cancel / Back</div>
+          <div style="font-size:7px;color:#a0d8a0;line-height:2;">START or M · Open Menu</div>
+          <div style="font-size:7px;color:#a0d8a0;line-height:2;">SELECT · View Pokémon party</div>
+          <div style="font-size:7px;color:#a0d8a0;line-height:2;">D-Pad buttons on device</div>
+        </div>
+      </div>
+      <div style="background:#0a1e0a;border:2px solid #2a5a2a;border-radius:3px;padding:8px;">
+        <div style="font-size:9px;color:#60d860;margin-bottom:5px;">🗺️ BUILDINGS</div>
+        <div style="font-size:7px;color:#a0d8a0;line-height:2.1;">
+          <span style="color:#f84040">🔴 Pokémon Center</span> · Heals your team for FREE<br>
+          <span style="color:#4040f8">🔵 Poké Mart</span> · Buy balls &amp; medicine<br>
+          <span style="color:#f8c000">⚔️ Gym</span> · Battle leader to earn a Badge<br>
+          <span style="color:#c06030">🏠 House</span> · Enter to find people &amp; items<br>
+          <span style="color:#9030c0">🧪 Lab</span> · Get your starter Pokémon here
+        </div>
+      </div>
+      <div style="background:#0a1e0a;border:2px solid #2a5a2a;border-radius:3px;padding:8px;">
+        <div style="font-size:9px;color:#60d860;margin-bottom:5px;">💡 GAMEPLAY TIPS</div>
+        <div style="font-size:7px;color:#a0d8a0;line-height:2.1;">
+          🌿 Walk into <span style="color:#60c040">tall grass</span> to find wild Pokémon<br>
+          🔴 Weaken a Pokémon then throw a Poké Ball to catch it<br>
+          ⬆️ Head <span style="color:#f8d030">NORTH</span> through routes to explore new areas<br>
+          💊 Use items from the <span style="color:#c880f0">BAG</span> in menu to heal your team<br>
+          ⚡ Type matchups matter — use super-effective moves!<br>
+          📈 Level up to learn new moves and <span style="color:#f8c840">EVOLVE</span>!
+        </div>
+      </div>
+      <div style="background:#0a1e0a;border:2px solid #2a5a2a;border-radius:3px;padding:8px;">
+        <div style="font-size:9px;color:#60d860;margin-bottom:5px;">⚔️ IN BATTLE</div>
+        <div style="font-size:7px;color:#a0d8a0;line-height:2.1;">
+          FIGHT · Choose a move to attack<br>
+          BAG · Use items (potions, balls, etc.)<br>
+          POKÉMON · Switch to another party member<br>
+          RUN · Flee from wild Pokémon (not trainers!)
+        </div>
+      </div>
+      <button id="tut-start" style="background:linear-gradient(135deg,#2a8a2a,#1a6a1a);color:#90f090;font-size:10px;padding:10px;border:2px solid #3aaa3a;cursor:pointer;font-family:'Press Start 2P',monospace;box-shadow:2px 2px 0 #0a2a0a;margin-top:2px;">▶ START ADVENTURE</button>
+    </div>
+  </div>`;
+  document.getElementById('tut-start')?.addEventListener('click',()=>{GS.scene='overworld';render();});
+}
+
+// ---- OVERWORLD ----
+function renderOverworld(){
+  preprocessMaps();
+  const p=GS.player,map=MAPS[p.area];
+  if(!map){screen.innerHTML='<div style="color:red;padding:10px;font-size:10px">ERROR: Map not found</div>';return;}
+  const badges=p.badges;
+  const badgeIcons=Array.from({length:8},(_,i)=>i<badges.length?`<div class="badge-icon" title="${badges[i]}"></div>`:`<div class="badge-empty"></div>`).join('');
+  const leadPoke=p.team[0];
+  screen.innerHTML=`<div style="width:100%;height:100%;position:absolute;top:0;left:0;display:flex;flex-direction:column;background:#000;">
+    <div id="ow-hud">
+      <div class="hud-area">${map.name}</div>
+      <div class="hud-badges">${badgeIcons}</div>
+      <div class="hud-team">🎴${p.team.length}/6</div>
+      <div class="hud-money">₽${p.money}</div>
+    </div>
+    <canvas id="ow-canvas" width="${CANVAS_W}" height="${CANVAS_H}" style="display:block;flex-shrink:0;"></canvas>
+    <div id="ow-menu-bar">
+      <div class="ow-menu-btn" id="ow-menu-btn">☰ MENU</div>
+      ${leadPoke
+        ?`<div style="font-size:7px;color:#60a860;flex:1;text-align:center">${leadPoke.name} ${leadPoke.hp}/${leadPoke.maxHp}HP</div>`
+        :`<div style="flex:1;text-align:center;font-size:7px;color:#406040">Visit the LAB to get a Pokémon!</div>`}
+      <div style="font-size:7px;color:#607060">Steps:${p.steps}</div>
+    </div>
+  </div>`;
+  drawMap();
+  document.getElementById('ow-menu-btn')?.addEventListener('click',()=>{GS.scene='menu';render();});
+}
+
+// ---- BATTLE ----
+function renderBattle(){
+  const b=GS.battle;if(!b)return;
+  const wp=b.wild,pp=b.player;
+  const wpHpPct=Math.max(0,(wp.hp/wp.maxHp)*100);
+  const ppHpPct=Math.max(0,(pp.hp/pp.maxHp)*100);
+  const wpHpCls=wpHpPct>50?'hp-full':wpHpPct>20?'hp-mid':'hp-low';
+  const ppHpCls=ppHpPct>50?'hp-full':ppHpPct>20?'hp-mid':'hp-low';
+  const ppExpPct=Math.max(0,Math.min(100,((pp.exp-expForLevel(pp.level,PKDATA[pp.id].eg||'medium_slow'))/(Math.max(1,pp.expNext-expForLevel(pp.level,PKDATA[pp.id].eg||'medium_slow'))))*100));
+  const wpSt=wp.status?`<span class="status-badge" style="background:${statusColors[wp.status]||'#888'}">${statusAbbr[wp.status]||''}</span>`:'';
+  const ppSt=pp.status?`<span class="status-badge" style="background:${statusColors[pp.status]||'#888'}">${statusAbbr[pp.status]||''}</span>`:'';
+  const isBusy=b.turn!=='choose'||GS.battleAnimating;
+  const moveButtons=pp.moves.map(mid=>{
+    const mv=MOVES[mid];if(!mv)return'';
+    const pp2=pp.pp[mid]??0,maxPp=mv.pp;const ppLow=pp2<=Math.floor(maxPp/3);
+    return`<button class="move-btn" data-mid="${mid}" ${isBusy||pp2<=0?'disabled':''}><span>${mv.name}</span><div style="display:flex;gap:4px;align-items:center"><span class="move-type-badge" style="background:${typeColors[mv.type]||'#888'}">${mv.type}</span><span class="move-pp ${ppLow?'low-pp':''}">${pp2}/${maxPp}</span></div></button>`;
+  }).join('');
+  const logText=b.log.join('<br>');
+  screen.innerHTML=`<div id="battle-screen" class="screen-fill fade-in" style="display:flex;flex-direction:column;">
+    <div id="battle-field">
+      <div class="battle-bg-clouds"><span class="battle-cloud">☁️</span><span class="battle-cloud" style="animation-delay:-8s;font-size:16px">☁️</span></div>
+      <div class="battle-platform-enemy"></div><div class="battle-platform-player"></div>
+      <img class="enemy-sprite" src="${spriteUrl(wp.id)}" alt="${wp.name}" onerror="this.style.display='none'">
+      <img class="player-battle-sprite" src="${spriteUrl(pp.id)}" alt="${pp.name}" onerror="this.style.display='none'">
+      <div class="enemy-hud">
+        <div class="hud-name-row"><span class="hud-poke-name">${wp.name}${wpSt}</span><span class="hud-level">Lv.${wp.level}</span></div>
+        <div class="hp-bar-wrap"><span class="hp-label">HP</span><div class="hp-bar-bg"><div class="hp-bar ${wpHpCls}" style="width:${wpHpPct}%"></div></div></div>
+      </div>
+      <div class="player-hud">
+        <div class="hud-name-row"><span class="hud-poke-name">${pp.name}${ppSt}</span><span class="hud-level">Lv.${pp.level}</span></div>
+        <div class="hp-bar-wrap"><span class="hp-label">HP</span><div class="hp-bar-bg"><div class="hp-bar ${ppHpCls}" style="width:${ppHpPct}%"></div></div></div>
+        <div class="hp-nums">${pp.hp}/${pp.maxHp}</div>
+        <div class="exp-mini-bg"><div class="exp-mini" style="width:${ppExpPct}%"></div></div>
+      </div>
+    </div>
+    <div id="battle-ui">
+      <div id="battle-log">${logText}</div>
+      <div id="battle-actions" style="display:flex;flex:1;">
+        <div style="display:${b.showMoves||b.showBag?'none':'grid'};grid-template-columns:1fr 1fr;flex:1;">
+          <button class="action-btn" data-action="fight" ${isBusy?'disabled':''}>⚔️ FIGHT</button>
+          <button class="action-btn" data-action="bag" ${isBusy?'disabled':''}>🎒 BAG</button>
+          <button class="action-btn" data-action="pokemon" ${isBusy?'disabled':''}>🔴 POKÉMON</button>
+          <button class="action-btn" data-action="run" ${isBusy?'disabled':''}>🏃 RUN</button>
+        </div>
+        <div style="display:${b.showMoves?'flex':'none'};flex:1;flex-direction:column;">
+          <div style="display:grid;grid-template-columns:1fr 1fr;flex:1;">${moveButtons}</div>
+          <div id="battle-back-btn" style="font-size:9px;color:#0044cc;cursor:pointer;text-align:center;padding:4px;background:#e8e8e8;border-top:2px solid #aaa">◀ BACK</div>
+        </div>
+        <div style="display:${b.showBag?'flex':'none'};flex:1;flex-direction:column;background:#e8e8e8;">
+          <div style="font-size:8px;color:#555;padding:4px 6px;border-bottom:1px solid #ccc">Choose an item:</div>
+          <div style="flex:1;overflow-y:auto;">${buildBagBattleItems()}</div>
+          <div id="battle-bag-back" style="font-size:9px;color:#0044cc;cursor:pointer;text-align:center;padding:4px;border-top:2px solid #aaa">◀ BACK</div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+  screen.querySelectorAll('.action-btn[data-action]').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const ac=btn.dataset.action;
+      if(ac==='fight'){b.showMoves=true;b.showBag=false;renderBattle();}
+      else if(ac==='bag'){b.showBag=true;b.showMoves=false;renderBattle();}
+      else if(ac==='pokemon'){GS.bagMode='battle';GS.scene='pokemenu';render();}
+      else if(ac==='run')tryRun();
+    });
+  });
+  screen.querySelectorAll('.move-btn[data-mid]').forEach(btn=>{btn.addEventListener('click',()=>{b.showMoves=false;doTurn(btn.dataset.mid);});});
+  document.getElementById('battle-back-btn')?.addEventListener('click',()=>{b.showMoves=false;b.showBag=false;renderBattle();});
+  document.getElementById('battle-bag-back')?.addEventListener('click',()=>{b.showBag=false;renderBattle();});
+  screen.querySelectorAll('.bag-battle-use-btn').forEach(btn=>{btn.addEventListener('click',()=>{b.showBag=false;useBagItemInBattle(btn.dataset.item);});});
+}
+
+function buildBagBattleItems(){
+  const usable=Object.keys(GS.player.bag).filter(k=>GS.player.bag[k]>0&&ITEMS[k]);
+  if(!usable.length)return`<div style="font-size:9px;color:#888;text-align:center;padding:10px">Bag is empty!</div>`;
+  return usable.map(k=>{const item=ITEMS[k];return`<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 8px;border-bottom:1px solid #ccc;background:#f8f8f8;"><span style="font-size:9px">${item.icon||'📦'} ${item.name}</span><span style="font-size:8px;color:#555">×${GS.player.bag[k]}</span><button class="bag-battle-use-btn" data-item="${k}" style="font-size:8px;background:#4070c0;color:#fff;border:none;padding:2px 6px;cursor:pointer;font-family:'Press Start 2P',monospace">USE</button></div>`;}).join('');
+}
+
+// ---- MENU ----
+function renderMenu(){
+  const p=GS.player;
+  const menuItems=[
+    {icon:'🔴',label:'POKÉMON',action:'pokemenu'},
+    {icon:'🎒',label:'BAG',action:'bag'},
+    {icon:'🗺️',label:'MAP',action:'map'},
+    {icon:'ℹ️',label:'TRAINER',action:'trainer'},
+    {icon:'❓',label:'HOW TO PLAY',action:'tutorial'},
+    {icon:'💾',label:'SAVE',action:'save'},
+    {icon:'❌',label:'CLOSE',action:'overworld'},
+  ];
+  screen.innerHTML=`<div id="menu-screen" class="screen-fill fade-in" style="display:flex;flex-direction:column;">
+    <div class="menu-header"><span>MENU</span><span class="menu-header-name">${p.name}</span></div>
+    <div class="menu-list">
+      ${menuItems.map(item=>`<div class="menu-item" data-action="${item.action}"><span class="menu-item-icon">${item.icon}</span><span>${item.label}</span></div>`).join('')}
+    </div>
+  </div>`;
+  screen.querySelectorAll('.menu-item[data-action]').forEach(el=>{
+    el.addEventListener('click',()=>{
+      const ac=el.dataset.action;
+      if(ac==='pokemenu'){GS.bagMode=null;GS.scene='pokemenu';render();}
+      else if(ac==='bag'){GS.bagMode=null;GS.scene='bag';render();}
+      else if(ac==='overworld'){GS.scene='overworld';render();}
+      else if(ac==='trainer')renderTrainerCard();
+      else if(ac==='save')handleSave();
+      else if(ac==='map')renderMapInfo();
+      else if(ac==='tutorial'){GS.scene='tutorial';render();}
+    });
+  });
+}
+
+function renderTrainerCard(){
+  const p=GS.player;
+  screen.innerHTML=`<div style="background:#1a2a3a;width:100%;height:100%;position:absolute;top:0;left:0;padding:12px;display:flex;flex-direction:column;gap:8px;" class="fade-in">
+    <div style="font-size:11px;color:#90c8f0;border-bottom:2px solid #2a4a6a;padding-bottom:6px;">TRAINER CARD</div>
+    <div style="display:flex;gap:12px;align-items:center;">
+      <div style="font-size:42px">🧑</div>
+      <div>
+        <div style="font-size:10px;color:#fff;margin-bottom:4px">${p.name}</div>
+        <div style="font-size:8px;color:#7090b0">Pokémon Trainer</div>
+        <div style="font-size:8px;color:#f8d030;margin-top:4px">₽ ${p.money}</div>
+        <div style="font-size:8px;color:#a0a0c0;margin-top:2px">Steps: ${p.steps}</div>
+      </div>
+    </div>
+    <div style="font-size:9px;color:#90c8f0;">BADGES (${p.badges.length}/8)</div>
+    <div style="display:flex;gap:4px;flex-wrap:wrap;">${p.badges.length===0?`<div style="font-size:8px;color:#5070a0">No badges yet...</div>`:p.badges.map(b=>`<div style="background:#1a3a5a;border:1px solid #3a6a9a;padding:3px 6px;font-size:8px;color:#f8d030">${b}</div>`).join('')}</div>
+    <div style="font-size:9px;color:#90c8f0;">POKÉMON (${p.team.length}/6)</div>
+    <div style="display:flex;gap:3px;">${p.team.map(pk=>`<img src="${spriteUrl(pk.id)}" style="width:36px;height:36px;" title="${pk.name} Lv.${pk.level}">`).join('')}</div>
+    <div style="font-size:8px;color:#3a6a8a;text-align:center;margin-top:auto;cursor:pointer" id="tc-back">◀ BACK</div>
+  </div>`;
+  document.getElementById('tc-back')?.addEventListener('click',()=>{GS.scene='menu';render();});
+}
+
+function renderMapInfo(){
+  const p=GS.player;
+  const areas=['pallet','route1','viridian','route2'];
+  const descriptions={pallet:'Your hometown. Visit the Lab!',route1:'Wild Pidgey and Rattata roam here.',viridian:'A city with a Gym and Mart.',route2:'Stronger Pokémon live here.'};
+  screen.innerHTML=`<div style="background:#0a1a2a;width:100%;height:100%;position:absolute;top:0;left:0;padding:12px;" class="fade-in">
+    <div style="font-size:10px;color:#60c0f0;border-bottom:2px solid #1a3a5a;padding-bottom:6px;margin-bottom:8px;">WORLD MAP</div>
+    ${areas.map(a=>{const map=MAPS[a];const cur=p.area===a;return`<div style="display:flex;align-items:center;gap:8px;padding:5px 6px;margin-bottom:4px;background:${cur?'#1a3a5a':'#0a1a2a'};border:2px solid ${cur?'#3a7aaa':'#1a3a5a'};border-radius:2px;">
+      <span style="font-size:12px">${cur?'📍':'·'}</span>
+      <div style="flex:1">
+        <div style="font-size:8px;color:${cur?'#90d8f8':'#5080a0'}">${map.name}</div>
+        <div style="font-size:7px;color:${cur?'#5090b0':'#304a60'};margin-top:1px">${descriptions[a]||''}</div>
+      </div>
+      ${cur?'<span style="font-size:7px;color:#f8d030">HERE</span>':''}
+    </div>`;}).join('')}
+    <div style="font-size:7px;color:#2a5a7a;margin-top:8px;line-height:2">Move NORTH to reach new regions.</div>
+    <div style="font-size:8px;color:#3a6a8a;text-align:center;margin-top:6px;cursor:pointer" id="map-back">◀ BACK</div>
+  </div>`;
+  document.getElementById('map-back')?.addEventListener('click',()=>{GS.scene='menu';render();});
+}
+
+function handleSave(){
+  try{localStorage.setItem('pokejsave',JSON.stringify(GS.player));notify('Game Saved! ✓',2000);}
+  catch(e){notify('Save failed!',1500);}
+  GS.scene='menu';render();
+}
+
+// ---- POKÉMON MENU ----
+function renderPokeMenu(){
+  const team=GS.player.team;const isInBattle=GS.bagMode==='battle';
+  screen.innerHTML=`<div id="pokemenu-screen" class="screen-fill fade-in" style="display:flex;flex-direction:column;">
+    <div class="pm-header"><span>POKÉMON PARTY</span><span style="font-size:8px;color:#508a50">${team.length}/6</span></div>
+    <div class="pm-list">
+      ${team.length===0
+        ?`<div style="font-size:9px;color:#406040;text-align:center;padding:20px;line-height:2">No Pokémon in party!<br><span style="font-size:7px;color:#2a5a2a">Visit the Lab to get one.</span></div>`
+        :team.map((pk,i)=>{
+          const hpPct=Math.max(0,(pk.hp/pk.maxHp)*100);
+          const hpCls=hpPct>50?'hp-full':hpPct>20?'hp-mid':'hp-low';
+          return`<div class="pm-card ${pk.hp<=0?'fainted':''} ${i===0?'active-lead':''}" data-idx="${i}">
+            <img class="pm-sprite" src="${spriteUrl(pk.id)}" alt="${pk.name}">
+            <div class="pm-info">
+              <div class="pm-name">${pk.name}${pk.hp<=0?' <span style="color:#c03030;font-size:7px">[FNT]</span>':''}</div>
+              <div class="pm-level">Lv.${pk.level}</div>
+              <div class="pm-types">${pk.types.map(t=>`<span class="type-badge" style="background:${typeColors[t]};font-size:7px;padding:1px 3px">${t}</span>`).join('')}</div>
+              <div class="pm-hp-bar-bg"><div class="pm-hp-fill ${hpCls}" style="width:${hpPct}%"></div></div>
+              <div style="font-size:7px;color:#508050;margin-top:2px">${pk.hp}/${pk.maxHp} HP${pk.status?` · <span style="color:${statusColors[pk.status]}">${statusAbbr[pk.status]}</span>`:''}</div>
+            </div>
+          </div>`;
+        }).join('')}
+    </div>
+    <div class="pm-back" id="pm-back">${isInBattle?'◀ BACK TO BATTLE':'◀ BACK TO MENU'}</div>
+  </div>`;
+  document.getElementById('pm-back')?.addEventListener('click',()=>{
+    if(GS.bagMode==='battle'){GS.scene='battle';GS.bagMode=null;render();}
+    else{GS.scene='menu';render();}
+  });
+  screen.querySelectorAll('.pm-card[data-idx]').forEach(card=>{
+    card.addEventListener('click',()=>{
+      const idx=parseInt(card.dataset.idx);
+      if(isInBattle){
+        const chosen=GS.player.team[idx];
+        if(chosen.hp<=0){notify(`${chosen.name} has fainted!`);return;}
+        if(chosen===GS.battle?.player){notify('Already in battle!');return;}
+        GS.battle.player=chosen;GS.battle.log=[`Go, ${chosen.name}!`];
+        GS.scene='battle';GS.bagMode=null;render();
+      }else{
+        GS.viewingPoke=GS.player.team[idx];GS.scene='detail';render();
+      }
+    });
+  });
+}
+
+// ---- DETAIL ----
+function renderDetail(){
+  const p=GS.viewingPoke;if(!p){GS.scene='pokemenu';render();return;}
+  const expCur=p.exp-expForLevel(p.level,PKDATA[p.id].eg||'medium_slow');
+  const expNeeded=Math.max(1,p.expNext-expForLevel(p.level,PKDATA[p.id].eg||'medium_slow'));
+  const expPct=Math.max(0,Math.min(100,(expCur/expNeeded)*100));
+  const hpPct=Math.max(0,(p.hp/p.maxHp)*100);
+  const hpCls=hpPct>50?'hp-full':hpPct>20?'hp-mid':'hp-low';
+  const maxStatVal=Math.max(p.maxHp,p.atk,p.def,p.spa,p.spd,p.spe,1);
+  const stats=[
+    {label:'HP',val:p.maxHp},{label:'ATK',val:p.atk},{label:'DEF',val:p.def},
+    {label:'SP.A',val:p.spa},{label:'SP.D',val:p.spd},{label:'SPE',val:p.spe},
+  ];
+  screen.innerHTML=`<div id="detail-screen" class="screen-fill fade-in" style="overflow-y:auto;padding:8px;">
+    <div class="detail-top">
+      <img class="detail-sprite" src="${spriteUrl(p.id)}" alt="${p.name}">
+      <div class="detail-info">
+        <div class="detail-name">${p.name}</div>
+        <div class="detail-types">${p.types.map(t=>`<span class="type-badge" style="background:${typeColors[t]}">${t}</span>`).join('')}</div>
+        <div class="detail-level">Level ${p.level}</div>
+        <div style="font-size:8px;color:#6060a0;margin-top:3px">HP: ${p.hp}/${p.maxHp}</div>
+        <div style="height:5px;background:#1a1a3a;border-radius:3px;margin-top:3px;overflow:hidden;border:1px solid #2a2a5a"><div class="hp-bar ${hpCls}" style="width:${hpPct}%;height:100%;border-radius:3px;"></div></div>
+        ${p.status?`<div style="margin-top:3px"><span class="status-badge" style="background:${statusColors[p.status]}">${statusAbbr[p.status]}</span></div>`:''}
+        <div class="exp-text">EXP: ${expCur}/${expNeeded}</div>
+        <div class="exp-bar-bg"><div class="exp-bar" style="width:${expPct}%"></div></div>
+      </div>
+    </div>
+    <div class="stat-grid">
+      ${stats.map(s=>`<div class="stat-row">
+        <div style="display:flex;justify-content:space-between"><span class="stat-label">${s.label}</span><span class="stat-val">${s.val}</span></div>
+        <div class="stat-bar-bg"><div class="stat-bar-fill" style="width:${Math.min(100,(s.val/maxStatVal)*100)}%"></div></div>
+      </div>`).join('')}
+    </div>
+    <div class="detail-moves-title">MOVES</div>
+    ${p.moves.map(mid=>{
+      const mv=MOVES[mid];if(!mv)return'';
+      const pp2=p.pp[mid]??0;
+      return`<div class="move-detail-row">
+        <div>
+          <span class="move-detail-name">${mv.name}</span>
+          <span class="move-type-badge" style="background:${typeColors[mv.type]||'#888'};font-size:7px;margin-left:4px">${mv.type}</span>
+        </div>
+        <div style="text-align:right">
+          <div class="move-detail-info">${catIcon[mv.cat]||''} PWR:${mv.power||'—'} ACC:${mv.acc}%</div>
+          <div style="font-size:7px;color:${pp2<=Math.floor(mv.pp/3)?'#c03020':'#7070a0'}">PP ${pp2}/${mv.pp}</div>
+        </div>
+      </div>`;
+    }).join('')}
+    <div class="detail-back" id="detail-back">◀ BACK</div>
+  </div>`;
+  document.getElementById('detail-back')?.addEventListener('click',()=>{GS.scene='pokemenu';GS.viewingPoke=null;render();});
+}
+
+// ---- BAG ----
+function renderBag(){
+  const bag=GS.player.bag;
+  const allItems=Object.keys(bag).filter(k=>bag[k]>0&&ITEMS[k]);
+  screen.innerHTML=`<div id="bag-screen" class="screen-fill fade-in" style="display:flex;flex-direction:column;">
+    <div class="bag-header"><span>🎒 BAG</span><span style="font-size:8px;color:#a060d0">${allItems.length} types</span></div>
+    <div class="bag-list">
+      ${allItems.length===0
+        ?`<div class="bag-empty">Your bag is empty!<br><br>Buy items at a Poké Mart.</div>`
+        :allItems.map(k=>{const item=ITEMS[k];if(!item)return'';return`<div class="bag-item" data-item="${k}">
+          <span class="bag-item-icon">${item.icon||'📦'}</span>
+          <div style="flex:1"><div class="bag-item-name">${item.name}</div><div class="bag-item-desc">${item.desc||''}</div></div>
+          <span class="bag-item-qty">×${bag[k]}</span>
+        </div>`;}).join('')}
+    </div>
+    <div class="bag-back" id="bag-back">◀ BACK TO MENU</div>
+  </div>`;
+  document.getElementById('bag-back')?.addEventListener('click',()=>{GS.scene='menu';render();});
+  screen.querySelectorAll('.bag-item[data-item]').forEach(el=>{
+    el.addEventListener('click',()=>{
+      const k=el.dataset.item;const item=ITEMS[k];if(!item)return;
+      if(item.t==='ball'){notify(`${item.name}: Use during battle to catch Pokémon.`,2000);return;}
+      useItemOnParty(k);
+    });
+  });
+}
+
+function useItemOnParty(itemKey){
+  const item=ITEMS[itemKey];const team=GS.player.team;
+  if(team.length===0){notify('No Pokémon in party!');return;}
+  const overlay=document.createElement('div');
+  overlay.style.cssText='position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.75);z-index:50;display:flex;flex-direction:column;padding:10px;gap:3px;overflow-y:auto;';
+  overlay.innerHTML=`<div style="font-size:9px;color:#d090f0;margin-bottom:4px">Use ${item.name} on which Pokémon?</div>`+
+    team.map((p,i)=>`<div class="bag-item" data-use="${i}" style="background:#1a0a30;border-color:#6a3a8a;">
+      <img src="${spriteUrl(p.id)}" style="width:28px;height:28px">
+      <div style="flex:1;font-size:8px;color:#c070e0">${p.name} Lv.${p.level}</div>
+      <div style="font-size:7px;color:#8050a0">${p.hp}/${p.maxHp} HP${p.status?` [${statusAbbr[p.status]}]`:''}</div>
+    </div>`).join('')+
+    `<div style="font-size:8px;color:#7050a0;cursor:pointer;text-align:center;padding:4px" id="use-cancel">Cancel</div>`;
+  screen.appendChild(overlay);
+  overlay.querySelectorAll('[data-use]').forEach(el=>{
+    el.addEventListener('click',()=>{
+      const poke=team[parseInt(el.dataset.use)];
+      if(!GS.player.bag[itemKey]||GS.player.bag[itemKey]<=0){notify('No more left!');overlay.remove();return;}
+      GS.player.bag[itemKey]--;
+      let msg='';
+      if(item.t==='heal'){
+        if(poke.hp<=0&&item.heal<999){msg=`Can't use on a fainted Pokémon!`;GS.player.bag[itemKey]++;overlay.remove();notify(msg);return;}
+        const amt=item.heal===999?poke.maxHp:item.heal;
+        const healed=Math.min(amt,poke.maxHp-poke.hp);
+        poke.hp=Math.min(poke.maxHp,poke.hp+amt);
+        msg=`${poke.name} restored ${healed} HP!`;
+      }else if(item.t==='status'){
+        if(!poke.status){msg=`${poke.name} doesn't need that!`;GS.player.bag[itemKey]++;overlay.remove();notify(msg);return;}
+        if(item.cures==='all'||poke.status===item.cures){poke.status=null;msg=`${poke.name}'s condition was cured!`;}
+        else{msg=`It had no effect!`;GS.player.bag[itemKey]++;}
+      }
+      overlay.remove();notify(msg,2000);render();
+    });
+  });
+  document.getElementById('use-cancel')?.addEventListener('click',()=>overlay.remove());
+}
+
+// ---- SHOP ----
+function renderShop(){
+  const area=GS.shopArea||GS.player.area;
+  const stock=(SHOP_STOCK[area]||[]).filter(k=>ITEMS[k]);
+  screen.innerHTML=`<div id="shop-screen" class="screen-fill fade-in" style="display:flex;flex-direction:column;">
+    <div class="shop-header"><span>🛒 POKÉ MART</span><span style="font-size:8px;color:#7070c0">${MAPS[area]?.name||'Mart'}</span></div>
+    <div class="shop-npc">🧑 Welcome! We've got everything you need for your journey!</div>
+    <div class="shop-money">Your money: <span>₽${GS.player.money}</span></div>
+    <div class="shop-list">
+      ${stock.length===0
+        ?`<div style="font-size:9px;color:#4040a0;text-align:center;padding:15px">Nothing in stock here yet!</div>`
+        :stock.map(k=>{const item=ITEMS[k];const owned=GS.player.bag[k]||0;return`<div class="shop-item" data-item="${k}">
+          <span class="shop-item-icon">${item.icon||'📦'}</span>
+          <div style="flex:1"><div class="shop-item-name">${item.name}</div><div style="font-size:7px;color:#4040a0">${item.desc||''}</div></div>
+          <span class="shop-item-price">₽${item.price}</span>
+          <span class="shop-item-owned">×${owned}</span>
+        </div>`;}).join('')}
+    </div>
+    <div class="shop-close" id="shop-close">🚪 Leave Shop</div>
+  </div>`;
+  document.getElementById('shop-close')?.addEventListener('click',()=>{GS.scene='overworld';render();});
+  screen.querySelectorAll('.shop-item[data-item]').forEach(el=>{
+    el.addEventListener('click',()=>{
+      const k=el.dataset.item;const item=ITEMS[k];if(!item)return;
+      if(GS.player.money<item.price){notify("Not enough money!",1500);return;}
+      GS.player.money-=item.price;GS.player.bag[k]=(GS.player.bag[k]||0)+1;
+      notify(`Bought ${item.name}! ₽${GS.player.money} left.`,1800);renderShop();
+    });
+  });
+}
+
+// ---- DIALOG ----
+function renderDialogScene(){
+  // Render background (overworld with canvas)
+  const prev=GS.prevScene||'overworld';
+  if(prev==='overworld'){
+    preprocessMaps();
+    const p=GS.player,map=MAPS[p.area];
+    if(map){
+      const badges=p.badges;
+      const badgeIcons=Array.from({length:8},(_,i)=>i<badges.length?`<div class="badge-icon"></div>`:`<div class="badge-empty"></div>`).join('');
+      const leadPoke=p.team[0];
+      screen.innerHTML=`<div style="width:100%;height:100%;position:absolute;top:0;left:0;display:flex;flex-direction:column;background:#000;">
+        <div id="ow-hud"><div class="hud-area">${map.name}</div><div class="hud-badges">${badgeIcons}</div><div class="hud-team">🎴${p.team.length}/6</div><div class="hud-money">₽${p.money}</div></div>
+        <canvas id="ow-canvas" width="${CANVAS_W}" height="${CANVAS_H}" style="display:block;flex-shrink:0;"></canvas>
+        <div id="ow-menu-bar"><div class="ow-menu-btn">☰ MENU</div>${leadPoke?`<div style="font-size:7px;color:#60a860;flex:1;text-align:center">${leadPoke.name} ${leadPoke.hp}/${leadPoke.maxHp}HP</div>`:'<div style="flex:1"></div>'}<div style="font-size:7px;color:#607060">Steps:${p.steps}</div></div>
+      </div>`;
+      drawMap();
+    }else{screen.innerHTML='';}
+  }else{screen.innerHTML='';}
+  const overlay=document.createElement('div');
+  overlay.style.cssText='position:absolute;top:0;left:0;width:100%;height:100%;z-index:50;pointer-events:none;';
+  overlay.innerHTML=`
+    <div style="position:absolute;top:0;left:0;width:100%;height:calc(100% - 70px);background:rgba(0,0,0,0.35);"></div>
+    <div style="position:absolute;bottom:0;left:0;right:0;">
+      <div class="dialog-box">${GS.dialog?.msg||''}</div>
+    </div>`;
+  screen.appendChild(overlay);
+}
+
+// ---- GAME OVER ----
+function renderGameOver(){
+  screen.innerHTML=`<div id="gameover-screen" class="screen-fill fade-in" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;">
+    <div class="go-title">BLACKED OUT!</div>
+    <div class="go-sub">All your Pokémon fainted...<br>You were taken to safety.</div>
+    <div class="go-money">₽ ${GS.player?.money||0} remaining</div>
+    <div style="font-size:8px;color:#444;margin-bottom:8px;text-align:center;line-height:2">Your Pokémon were partially<br>restored at the nearest town.</div>
+    <button class="go-btn" id="go-continue">▶ CONTINUE</button>
+    <button class="go-btn" id="go-load" style="margin-top:4px;font-size:8px;">↺ LOAD SAVE</button>
+  </div>`;
+  document.getElementById('go-continue')?.addEventListener('click',()=>{
+    for(const p of GS.player.team){if(p.hp<=0)p.hp=Math.max(1,Math.floor(p.maxHp/4));}
+    GS.scene='overworld';render();
+  });
+  document.getElementById('go-load')?.addEventListener('click',()=>{
+    try{
+      const sv=localStorage.getItem('pokejsave');
+      if(sv){GS.player=JSON.parse(sv);GS.scene='overworld';render();notify('Save loaded!',2000);}
+      else notify('No save found!',2000);
+    }catch(e){notify('Load failed!',2000);}
+  });
+}
+
+// ============================================================
+//  INPUT HANDLING
+// ============================================================
+function handleABtn(){
+  switch(GS.scene){
+    case'title':GS.nameInput='';GS.scene='name';render();break;
+    case'dialog':
+      if(GS.dialog?.cb){GS.dialog.cb();GS.dialog=null;}
+      else{GS.scene=GS.prevScene||'overworld';render();}
+      break;
+    case'overworld':{
+      const p=GS.player,map=MAPS[p.area];
+      const dirs={up:{dx:0,dy:-1},down:{dx:0,dy:1},left:{dx:-1,dy:0},right:{dx:1,dy:0}};
+      const d=dirs[p.dir]||{dx:0,dy:1};
+      const fx=p.pos.x+d.dx,fy=p.pos.y+d.dy;
+      const tile=map?.tiles[fy]?.[fx];
+      if(tile!==undefined&&tile>=4&&tile<=8){
+        const key=`${fx},${fy}`;
+        if(map.bldgs&&map.bldgs[key])handleBuilding(map.bldgs[key]);
+      }
+      break;}
+  }
+}
+
+function handleBBtn(){
+  switch(GS.scene){
+    case'menu':case'pokemenu':case'bag':case'detail':GS.scene='overworld';render();break;
+    case'shop':GS.scene='overworld';render();break;
+    case'battle':
+      if(GS.battle?.showMoves){GS.battle.showMoves=false;renderBattle();}
+      else if(GS.battle?.showBag){GS.battle.showBag=false;renderBattle();}
+      break;
+  }
+}
+
+// Keyboard
+document.addEventListener('keydown',e=>{
+  if(GS.scene==='name')return;
+  switch(e.key){
+    case'ArrowUp':case'w':case'W':if(GS.scene==='overworld')movePlayer(0,-1);break;
+    case'ArrowDown':case's':case'S':if(GS.scene==='overworld')movePlayer(0,1);break;
+    case'ArrowLeft':case'a':case'A':if(GS.scene==='overworld')movePlayer(-1,0);break;
+    case'ArrowRight':case'd':case'D':if(GS.scene==='overworld')movePlayer(1,0);break;
+    case'Enter':case'z':case'Z':handleABtn();break;
+    case'Escape':case'x':case'X':handleBBtn();break;
+    case'm':case'M':if(GS.scene==='overworld'){GS.scene='menu';render();}break;
+    case'b':case'B':if(GS.scene==='title'){// load save on B on title
+      try{const sv=localStorage.getItem('pokejsave');if(sv){GS.player=JSON.parse(sv);GS.scene='overworld';render();notify('Save loaded!',2000);}}catch(e){}
+    }break;
+  }
+});
+
+// D-Pad
+document.querySelectorAll('.dpad-btn[data-dir]').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    const dir=btn.dataset.dir;
+    if(GS.scene==='overworld'){const m={up:[0,-1],down:[0,1],left:[-1,0],right:[1,0]};const d=m[dir];if(d)movePlayer(d[0],d[1]);}
+    btn.classList.add('pressed');setTimeout(()=>btn.classList.remove('pressed'),150);
+  });
+});
+
+// A / B buttons
+document.getElementById('btn-a')?.addEventListener('click',()=>{
+  document.getElementById('btn-a').classList.add('pressed');setTimeout(()=>document.getElementById('btn-a').classList.remove('pressed'),150);
+  handleABtn();
+});
+document.getElementById('btn-b')?.addEventListener('click',()=>{
+  document.getElementById('btn-b').classList.add('pressed');setTimeout(()=>document.getElementById('btn-b').classList.remove('pressed'),150);
+  handleBBtn();
+});
+
+// START / SELECT
+document.getElementById('start-btn')?.addEventListener('click',()=>{
+  if(GS.scene==='title'){GS.nameInput='';GS.scene='name';render();}
+  else if(GS.scene==='overworld'){GS.scene='menu';render();}
+  else if(GS.scene==='menu'){GS.scene='overworld';render();}
+  else if(GS.scene==='tutorial'){GS.scene='overworld';render();}
+});
+document.getElementById('select-btn')?.addEventListener('click',()=>{
+  if(GS.scene==='overworld'){GS.bagMode=null;GS.scene='pokemenu';render();}
+});
+
+// ---- Water tile animation ----
+setInterval(()=>{animFrame=(animFrame+1)%4;if(GS.scene==='overworld')drawMap();},600);
+
+// ---- Try to restore save on load ----
+(function tryLoadSave(){
+  try{
+    const sv=localStorage.getItem('pokejsave');
+    if(sv){const parsed=JSON.parse(sv);if(parsed&&parsed.name&&parsed.team)GS.player=parsed;}
+  }catch(e){}
+})();
+
+// ---- BOOT ----
+preprocessMaps();
+render();
+</script>
+</body>
+</html>
